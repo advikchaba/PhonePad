@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Web app
+frontend/node_modules/
+backend/static/
+
+# Packaged executable
+build/
+dist/

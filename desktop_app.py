@@ -116,6 +116,7 @@ def main() -> None:
             host="0.0.0.0",
             port=PORT,
             log_level="error",
+            log_config=None,  # Avoid Uvicorn's default formatter calling isatty() on windowed sys.stdout=None.
             access_log=False,
         )
         server = uvicorn.Server(config)

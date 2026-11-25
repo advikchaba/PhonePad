@@ -333,6 +333,8 @@ def lan_ip() -> str:
 def pick_port(preferred: int) -> int:
     for port in range(preferred, preferred + 20):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Same flag uvicorn uses: ignore sockets left in TIME_WAIT by a previous run.
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 s.bind(("0.0.0.0", port))
                 return port

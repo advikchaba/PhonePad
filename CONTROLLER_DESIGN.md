@@ -13,8 +13,10 @@ Make every control reachable without a fingertip balancing on the phone edge, wh
 - **Show what the gamepad is doing.** A recognizable controller silhouette, physical-looking controls, clear Xbox/PlayStation legends, and immediate pressed/analog feedback reduce the abstraction of a screen full of floating circles.
 - **Respect orientation and accessibility.** Prefer landscape; maintain readable labels, high contrast, keyboard-operable buttons, and `aria-pressed` state. Never rely on color alone to show a press.
 
-## Prototype in this branch
-`frontend/index.html` is a self-contained visual and interaction prototype. The shoulder controls are intentionally oversized and inset from the canvas edges. It demonstrates Xbox/PlayStation legends, momentary button feedback, trigger travel, and stick movement. It is a UI prototype only: this checkout does not contain the FastAPI/WebSocket backend or the original frontend sources, so it does not currently transmit input to a PC.
+## Implementation in this branch
+`frontend/index.html` is the phone controller, served by the FastAPI app at `/phone`. Touch and keyboard controls produce compact binary packets over a WebSocket; `backend/main.py` applies them to the virtual pad and exposes live state to the desktop dashboard. Bumpers are inset from the glass edge, buttons have generous hit regions, and multi-touch can combine sticks and buttons. `frontend/host.html` displays a QR code, connection/driver status, and live button, stick, and trigger values.
+
+The Windows app creates a virtual Xbox 360 controller through ViGEmBus. On first launch it offers to install the bundled driver with administrator approval. A compatible Windows PC and the ViGEmBus driver are required for games to receive controller input. Actual comfort still needs device testing; the validation checklist below is a release gate, not a claim that every hand/device combination has already been measured.
 
 ## Validation before shipping
 

@@ -31,6 +31,8 @@
     .header-right { display: flex; align-items: center; gap: 14px; }
     .connection { color: #a5acb9; font-size: 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #f5b84b; box-shadow: 0 0 10px #f5b84b77; }
+    .connection.online .dot { background: #48d597; box-shadow: 0 0 10px #48d59788; }
+    .connection.warning .dot { background: #f5b84b; box-shadow: 0 0 10px #f5b84b88; }
     .mode-switch { display: inline-flex; gap: 3px; background: #20242d; border: 1px solid var(--line); padding: 4px; border-radius: 12px; }
     .mode-switch button { border: 0; border-radius: 9px; padding: 8px 13px; background: transparent; color: #9da4b1; font-size: 12px; font-weight: 650; cursor: pointer; transition: .18s ease; }
     .mode-switch button[aria-pressed="true"] { color: white; background: #393147; box-shadow: inset 0 0 0 1px #a78bfa45; }
@@ -83,13 +85,19 @@
       .portrait-note { display: block; }
     }
     @media (orientation: landscape) and (max-height: 500px) {
-      header { height: 52px; }
-      main { padding: 8px 0 0; }
+      header { height: 50px; }
+      main { padding: 0; }
       .intro { padding-bottom: 4px; }
       .intro p { margin-top: 3px; }
-      svg.controller { max-height: 70svh; }
+      svg.controller { max-height: none; }
       .meta-row { padding-top: 6px; }
       .footnote { padding-top: 5px; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) and (max-width: 900px) {
+      .app { padding: 0; }
+      header { padding: 0 14px; }
+      .intro, .meta-row, .footnote { display: none; }
+      .stage { border-radius: 0; border-left: 0; border-right: 0; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
   </style>
@@ -102,7 +110,7 @@
       <div><div class="brand-name">PhonePad</div><div class="brand-sub">Your phone, your controller</div></div>
     </div>
     <div class="header-right">
-      <div class="connection" title="This standalone preview is not connected to a PC"><span class="dot"></span>Preview mode</div>
+      <div class="connection" id="connection-status" role="status"><span class="dot"></span><span id="connection-label">Connecting…</span></div>
       <div class="mode-switch" role="group" aria-label="Controller button style">
         <button type="button" data-mode="xbox" aria-pressed="true">Xbox</button>
         <button type="button" data-mode="playstation" aria-pressed="false">PlayStation</button>
@@ -114,8 +122,8 @@
       <div><h1>Controller</h1><p>Hold your phone sideways and play naturally.</p></div>
       <div class="layout-label">COMFORT LAYOUT <span style="color:#c4b5fd">·</span> shoulders moved inboard</div>
     </div>
-    <section class="stage" aria-label="Interactive controller preview">
-      <svg class="controller" viewBox="0 0 1000 560" role="group" aria-label="Interactive game controller">
+    <section class="stage" aria-label="Interactive phone game controller">
+      <svg class="controller" viewBox="0 70 1000 410" role="group" aria-label="Interactive game controller">
         <defs>
           <linearGradient id="shell" x1="0" y1="0" x2=".15" y2="1"><stop stop-color="#444852"/><stop offset=".24" stop-color="#292d36"/><stop offset="1" stop-color="#1d2028"/></linearGradient>
           <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6d727d" stop-opacity=".72"/><stop offset=".22" stop-color="#3c414b" stop-opacity=".7"/><stop offset="1" stop-color="#101218" stop-opacity=".9"/></linearGradient>
@@ -140,13 +148,13 @@
         </g>
         <!-- Inboard shoulder controls: large hit regions, separated from the glass edge -->
         <g class="key" data-control="LB" role="button" tabindex="0" aria-label="Left bumper" aria-pressed="false">
-          <rect class="hit" x="188" y="104" width="132" height="72" rx="26"/>
+          <rect class="hit" x="188" y="70" width="132" height="92" rx="26"/>
           <rect class="face" x="209" y="121" width="90" height="31" rx="13" fill="url(#button)" stroke="#777d89" stroke-opacity=".55"/>
           <rect class="focus-ring" x="202" y="115" width="104" height="44" rx="17"/>
           <text class="control-label" x="254" y="143">LB</text>
         </g>
         <g class="key" data-control="RB" role="button" tabindex="0" aria-label="Right bumper" aria-pressed="false">
-          <rect class="hit" x="680" y="104" width="132" height="72" rx="26"/>
+          <rect class="hit" x="680" y="70" width="132" height="92" rx="26"/>
           <rect class="face" x="701" y="121" width="90" height="31" rx="13" fill="url(#button)" stroke="#777d89" stroke-opacity=".55"/>
           <rect class="focus-ring" x="694" y="115" width="104" height="44" rx="17"/>
           <text class="control-label" x="746" y="143">RB</text>
@@ -201,72 +209,158 @@
       <div class="hints"><div class="hint"><span class="hint-mark">●</span> Hold to press</div><div class="hint"><span class="hint-mark">↔</span> Drag sticks</div><div class="hint"><span class="hint-mark">⌁</span> Multi-touch</div></div>
       <div class="inputs" aria-live="polite"><span>INPUT</span><span class="input-pill" id="input-left">LX 0 · LY 0</span><span class="input-pill" id="input-right">RX 0 · RY 0</span></div>
     </div>
-    <div class="footnote">Touch targets are deliberately larger than the drawn buttons. Shoulder controls are inset from the screen edge.</div>
+    <div class="footnote">Inputs go over your local Wi-Fi only. Keep the PhonePad host window open while playing.</div>
   </main>
 </div>
 <script>
 (() => {
   const svg = document.querySelector('svg.controller');
   const active = new Map();
-  const stickCenters = { 'Left stick': [370, 259], 'Right stick': [630, 329] };
-  const inputLeft = document.querySelector('#input-left');
-  const inputRight = document.querySelector('#input-right');
-  const setPressed = (el, down) => {
-    if (!el) return;
-    el.classList.toggle('is-down', down);
-    el.setAttribute('aria-pressed', String(down));
-    if (el.dataset.trigger) {
-      const fill = el.querySelector('.trigger-fill');
-      fill?.setAttribute('height', down ? '10' : '0');
-      fill?.setAttribute('y', down ? '190' : '190');
-    }
+  const keyboard = new Set();
+  const sequence = { value: 0 };
+  const axes = { lx: 128, ly: 128, rx: 128, ry: 128 };
+  const triggers = { LT: 0, RT: 0 };
+  const centers = { 'Left stick': [370, 259], 'Right stick': [630, 329] };
+  const status = document.querySelector('#connection-status');
+  const statusLabel = document.querySelector('#connection-label');
+  const leftReadout = document.querySelector('#input-left');
+  const rightReadout = document.querySelector('#input-right');
+  const buttonBits = {
+    A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, View: 6, Menu: 7,
+    'Left stick': 8, 'Right stick': 9, 'D-pad Up': 10, 'D-pad Down': 11,
+    'D-pad Left': 12, 'D-pad Right': 13, Guide: 14,
   };
-  const eventPoint = (evt) => {
+  let socket = null;
+  let reconnectTimer = null;
+
+  const setStatus = (label, online, warning = false) => {
+    statusLabel.textContent = label;
+    status.classList.toggle('online', Boolean(online) && !warning);
+    status.classList.toggle('warning', Boolean(warning));
+  };
+  const pressedControls = () => {
+    const result = new Set(keyboard);
+    for (const el of active.values()) if (el?.dataset.control) result.add(el.dataset.control);
+    return result;
+  };
+  const refreshVisuals = () => {
+    const held = pressedControls();
+    document.querySelectorAll('[data-control]').forEach(el => {
+      const down = held.has(el.dataset.control);
+      el.classList.toggle('is-down', down);
+      el.setAttribute('aria-pressed', String(down));
+      if (el.dataset.trigger) {
+        const fill = el.querySelector('.trigger-fill');
+        fill?.setAttribute('height', triggers[el.dataset.control] ? '10' : '0');
+      }
+    });
+    document.querySelectorAll('[data-stick]').forEach(el => {
+      const down = [...active.values()].includes(el);
+      el.classList.toggle('is-down', down);
+      el.setAttribute('aria-pressed', String(down));
+    });
+    sendPacket();
+  };
+  const sendPacket = () => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    let bits = 0;
+    for (const name of pressedControls()) if (buttonBits[name] !== undefined) bits |= 1 << buttonBits[name];
+    const p = new Uint8Array(10);
+    p[0] = 1; p[1] = bits & 255; p[2] = (bits >> 8) & 255;
+    p[3] = axes.lx; p[4] = axes.ly; p[5] = axes.rx; p[6] = axes.ry;
+    p[7] = triggers.LT; p[8] = triggers.RT; p[9] = sequence.value++ & 255;
+    socket.send(p);
+  };
+  const showAxes = () => {
+    const signed = value => Math.round((value - 128) * 100 / (value >= 128 ? 127 : 128));
+    leftReadout.textContent = `LX ${signed(axes.lx)} · LY ${signed(axes.ly)}`;
+    rightReadout.textContent = `RX ${signed(axes.rx)} · RY ${signed(axes.ry)}`;
+  };
+  const eventPoint = evt => {
     const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
     return p.matrixTransform(svg.getScreenCTM().inverse());
   };
-  const updateStick = (name, evt, el) => {
-    const [cx, cy] = stickCenters[name];
+  const moveStick = (name, evt, el) => {
+    const [cx, cy] = centers[name];
     const p = eventPoint(evt);
     let dx = p.x - cx, dy = p.y - cy;
     const distance = Math.hypot(dx, dy), radius = 25;
     if (distance > radius) { dx = dx / distance * radius; dy = dy / distance * radius; }
-    const cap = el.querySelector('.stick-cap');
-    cap.setAttribute('cx', cx + dx); cap.setAttribute('cy', cy + dy);
-    const x = Math.round(dx / radius * 100), y = Math.round(-dy / radius * 100);
-    (name === 'Left stick' ? inputLeft : inputRight).textContent = `${name === 'Left stick' ? 'LX' : 'RX'} ${x} · ${name === 'Left stick' ? 'LY' : 'RY'} ${y}`;
+    el.querySelector('.stick-cap').setAttribute('cx', cx + dx);
+    el.querySelector('.stick-cap').setAttribute('cy', cy + dy);
+    const prefix = name === 'Left stick' ? 'l' : 'r';
+    axes[prefix + 'x'] = Math.max(0, Math.min(255, Math.round(128 + dx / radius * 127)));
+    axes[prefix + 'y'] = Math.max(0, Math.min(255, Math.round(128 - dy / radius * 127)));
+    showAxes(); sendPacket();
   };
-  const resetStick = (el) => {
-    const name = el.dataset.stick, [cx, cy] = stickCenters[name];
-    const cap = el.querySelector('.stick-cap'); cap.setAttribute('cx', cx); cap.setAttribute('cy', cy);
-    (name === 'Left stick' ? inputLeft : inputRight).textContent = name === 'Left stick' ? 'LX 0 · LY 0' : 'RX 0 · RY 0';
-    setPressed(el, false);
+  const resetStick = el => {
+    const name = el.dataset.stick, [cx, cy] = centers[name];
+    el.querySelector('.stick-cap').setAttribute('cx', cx);
+    el.querySelector('.stick-cap').setAttribute('cy', cy);
+    const prefix = name === 'Left stick' ? 'l' : 'r';
+    axes[prefix + 'x'] = axes[prefix + 'y'] = 128;
+    showAxes();
   };
-  const onDown = (evt) => {
+  const connect = () => {
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+    const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    socket = new WebSocket(`${scheme}//${location.host}/ws`);
+    socket.binaryType = 'arraybuffer';
+    socket.onopen = () => { setStatus('Connected to PC', true); sendPacket(); };
+    socket.onmessage = evt => {
+      try {
+        const message = JSON.parse(evt.data);
+        if (message.type === 'ready' && !message.pad_ready) {
+          setStatus('Connected · PC needs ViGEmBus', true, true);
+          document.querySelector('.footnote').textContent = message.pad_error || 'Install ViGEmBus on the PC, then restart PhonePad.';
+        }
+      } catch { /* no status payload */ }
+    };
+    socket.onclose = () => {
+      setStatus('Reconnecting…', false);
+      active.clear(); keyboard.clear(); axes.lx = axes.ly = axes.rx = axes.ry = 128; triggers.LT = triggers.RT = 0;
+      document.querySelectorAll('.stick-cap').forEach(cap => {
+        const el = cap.closest('[data-stick]'), [cx, cy] = centers[el.dataset.stick];
+        cap.setAttribute('cx', cx); cap.setAttribute('cy', cy);
+      });
+      refreshVisuals(); showAxes();
+      clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connect, 1200);
+    };
+    socket.onerror = () => socket.close();
+  };
+  const onDown = evt => {
     const el = evt.target.closest('[data-control], [data-stick]');
     if (!el) return;
     evt.preventDefault();
+    if (el.dataset.stick && [...active.values()].includes(el)) return;
     el.focus({ preventScroll: true });
     svg.setPointerCapture(evt.pointerId);
     active.set(evt.pointerId, el);
-    if (el.dataset.stick) { setPressed(el, true); updateStick(el.dataset.stick, evt, el); }
-    else setPressed(el, true);
+    if (el.dataset.trigger) triggers[el.dataset.control] = 255;
+    if (el.dataset.stick) moveStick(el.dataset.stick, evt, el);
+    refreshVisuals();
   };
-  const onMove = (evt) => {
+  const onMove = evt => {
+    if (!active.has(evt.pointerId)) return;
     const el = active.get(evt.pointerId);
-    if (!el) return;
-    if (el.dataset.stick) { updateStick(el.dataset.stick, evt, el); return; }
-    // Pointer capture keeps the stream alive; hit-test the current finger location
-    // separately so sliding from one button to another still feels natural.
+    if (el?.dataset.stick) { moveStick(el.dataset.stick, evt, el); return; }
     const hit = document.elementFromPoint(evt.clientX, evt.clientY);
-    const next = hit?.closest?.('[data-control]');
-    if (next && next !== el) { setPressed(el, false); setPressed(next, true); active.set(evt.pointerId, next); }
+    const next = hit?.closest?.('[data-control], [data-stick]') || null;
+    if (next?.dataset.stick && [...active.values()].includes(next)) return;
+    if (next !== el) {
+      if (el?.dataset.trigger) triggers[el.dataset.control] = 0;
+      active.set(evt.pointerId, next);
+      if (next?.dataset.trigger) triggers[next.dataset.control] = 255;
+      refreshVisuals();
+    }
   };
-  const onUp = (evt) => {
+  const onUp = evt => {
+    if (!active.has(evt.pointerId)) return;
     const el = active.get(evt.pointerId);
-    if (!el) return;
     active.delete(evt.pointerId);
-    if (el.dataset.stick) resetStick(el); else setPressed(el, false);
+    if (el?.dataset.trigger) triggers[el.dataset.control] = 0;
+    if (el?.dataset.stick) resetStick(el);
+    refreshVisuals();
     if (svg.hasPointerCapture(evt.pointerId)) svg.releasePointerCapture(evt.pointerId);
   };
   svg.addEventListener('pointerdown', onDown);
@@ -274,40 +368,41 @@
   svg.addEventListener('pointerup', onUp);
   svg.addEventListener('pointercancel', onUp);
   svg.addEventListener('lostpointercapture', onUp);
+  document.querySelectorAll('[data-control], [data-stick]').forEach(el => {
+    el.addEventListener('keydown', evt => {
+      if ((evt.key === ' ' || evt.key === 'Enter') && el.dataset.control) { evt.preventDefault(); keyboard.add(el.dataset.control); refreshVisuals(); }
+    });
+    el.addEventListener('keyup', evt => {
+      if ((evt.key === ' ' || evt.key === 'Enter') && el.dataset.control) { evt.preventDefault(); keyboard.delete(el.dataset.control); refreshVisuals(); }
+    });
+    el.addEventListener('blur', () => { if (el.dataset.control) { keyboard.delete(el.dataset.control); refreshVisuals(); } });
+  });
   document.querySelectorAll('.mode-switch button').forEach(button => button.addEventListener('click', () => {
     const ps = button.dataset.mode === 'playstation';
     document.querySelectorAll('.mode-switch button').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
     const legends = ps ? { Y: '△', B: '○', A: '✕', X: '□' } : { Y: 'Y', B: 'B', A: 'A', X: 'X' };
     Object.entries(legends).forEach(([key, label]) => {
-      const text = document.querySelector(`[data-legend="${key}"]`);
-      text.textContent = label;
+      const text = document.querySelector(`[data-legend="${key}"]`); text.textContent = label;
       text.closest('[data-control]').setAttribute('aria-label', `${label} button`);
     });
-    const shoulderLabels = ps
+    const shoulders = ps
       ? { LB: ['L1', 'Left shoulder button'], RB: ['R1', 'Right shoulder button'], LT: ['L2', 'Left trigger'], RT: ['R2', 'Right trigger'] }
       : { LB: ['LB', 'Left bumper'], RB: ['RB', 'Right bumper'], LT: ['LT', 'Left trigger'], RT: ['RT', 'Right trigger'] };
-    Object.entries(shoulderLabels).forEach(([id, [label, accessible]]) => {
+    Object.entries(shoulders).forEach(([id, [label, accessible]]) => {
       const control = document.querySelector(`[data-control="${id}"]`);
-      control.setAttribute('aria-label', accessible);
-      control.querySelector('.control-label, .tiny-label').textContent = label;
+      control.setAttribute('aria-label', accessible); control.querySelector('.control-label, .tiny-label').textContent = label;
     });
-    const centerLabels = ps ? { View: ['SHARE', 'Share'], Menu: ['OPTIONS', 'Options'] } : { View: ['VIEW', 'View'], Menu: ['MENU', 'Menu'] };
-    Object.entries(centerLabels).forEach(([id, [label, accessible]]) => {
+    const centersLabel = ps ? { View: ['SHARE', 'Share'], Menu: ['OPTIONS', 'Options'] } : { View: ['VIEW', 'View'], Menu: ['MENU', 'Menu'] };
+    Object.entries(centersLabel).forEach(([id, [label, accessible]]) => {
       const control = document.querySelector(`[data-control="${id}"]`);
-      control.querySelector('.tiny-label').textContent = label;
-      control.setAttribute('aria-label', `${accessible} button`);
+      control.querySelector('.tiny-label').textContent = label; control.setAttribute('aria-label', `${accessible} button`);
     });
     document.querySelector('[data-control="Guide"]').setAttribute('aria-label', ps ? 'PlayStation button' : 'Guide button');
   }));
-  document.querySelectorAll('[data-control], [data-stick]').forEach(el => {
-    el.addEventListener('keydown', evt => {
-      if (evt.key === ' ' || evt.key === 'Enter') { evt.preventDefault(); setPressed(el, true); }
-    });
-    el.addEventListener('keyup', evt => {
-      if (evt.key === ' ' || evt.key === 'Enter') { evt.preventDefault(); setPressed(el, false); }
-    });
-    el.addEventListener('blur', () => setPressed(el, false));
-  });
+  connect();
+  setInterval(sendPacket, 250); // heartbeat also lets the PC clear stuck controls after a phone sleeps
+  navigator.wakeLock?.request('screen').catch(() => {});
+  screen.orientation?.lock('landscape').catch(() => {});
 })();
 </script>
 </body>

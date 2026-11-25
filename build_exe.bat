@@ -9,6 +9,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 echo Installing desktop application dependencies...
+set "VGAMEPAD_SKIP_VIGEMBUS_INSTALL=true"
 ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check --upgrade -r requirements.txt
 if errorlevel 1 goto :failed
 

@@ -1,19 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""Windowed, self-contained PhonePad desktop UI prototype."""
+"""Windowed, self-contained PhonePad desktop application."""
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all
 
-webview_datas, webview_binaries, webview_hidden = collect_all("webview")
 root = Path(SPECPATH)
-frontend = root / "frontend"
+package_data = []
+package_binaries = []
+hidden_imports = []
+for package in ("webview", "fastapi", "uvicorn", "websockets", "qrcode", "vgamepad"):
+    data, binaries, hidden = collect_all(package)
+    package_data += data
+    package_binaries += binaries
+    hidden_imports += hidden
 
+frontend = root / "frontend"
 a = Analysis(
     [str(root / "app.py")],
     pathex=[str(root)],
-    binaries=webview_binaries,
-    datas=webview_datas + [(str(frontend), "frontend")],
-    hiddenimports=webview_hidden,
+    binaries=package_binaries,
+    datas=package_data + [(str(frontend), "frontend")],
+    hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

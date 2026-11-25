@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import os
 import socket
 import sys
@@ -48,7 +49,11 @@ def lan_ip() -> str:
     except OSError:
         pass
     for address in candidates:
-        if address != "127.0.0.1" and not address.startswith("169.254."):
+        try:
+            parsed = ipaddress.ip_address(address)
+        except ValueError:
+            continue
+        if parsed.version == 4 and not parsed.is_loopback and not parsed.is_link_local:
             return address
     return "127.0.0.1"
 

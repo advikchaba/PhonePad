@@ -1,100 +1,203 @@
-"""Windows virtual Xbox controller output via ViGEmBus."""
+"""Virtual gamepad engines.
+
+On Windows the ``vgamepad`` package talks to the ViGEmBus driver, which creates
+a real XInput (Xbox 360) or DirectInput/HID (DualShock 4) device that every
+game sees.  Anywhere else - or when the driver is missing - PhonePad falls back
+to a simulated pad, so the server still runs and the dashboard still works.
+"""
+
 from __future__ import annotations
 
-import os
-from typing import Any
+import logging
+import sys
+import threading
+from typing import Callable
+
+from . import mapping
+from .protocol import NEUTRAL, PadState
+
+log = logging.getLogger("phonepad.pad")
+
+KINDS = ("xbox", "ps")
+RumbleCallback = Callable[[int, int], None]
 
 
-BUTTON_BITS = {
-    0: "A", 1: "B", 2: "X", 3: "Y",
-    4: "LB", 5: "RB", 6: "BACK", 7: "START",
-    8: "LS", 9: "RS", 10: "UP", 11: "DOWN",
-    12: "LEFT", 13: "RIGHT", 14: "GUIDE",
-}
+def driver_installed() -> bool:
+    """True when the ViGEmBus driver service is registered (Windows only)."""
+    if sys.platform != "win32":
+        return False
+    import winreg
+
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SYSTEM\CurrentControlSet\Services\ViGEmBus",
+        ):
+            return True
+    except OSError:
+        return False
 
 
-def _stick_value(value: int) -> int:
-    """Convert an unsigned byte centered at 128 to an XInput stick value."""
-    offset = value - 128
-    return max(-32768, min(32767, int(offset * (32767 / (127 if offset >= 0 else 128)))))
+class XboxEngine:
+    """Xbox 360 pad (XInput).  Games see 'Xbox 360 Controller for Windows'."""
 
+    kind = "xbox"
 
-class VirtualGamepad:
-    """Best-effort XInput pad; server/UI still runs when the driver is absent."""
+    def __init__(self, on_rumble: RumbleCallback) -> None:
+        import vgamepad as vg
 
-    def __init__(self) -> None:
-        self.pad: Any | None = None
-        self.vg: Any | None = None
-        self.error: str | None = None
-        self._pressed: set[str] = set()
-        if os.name != "nt":
-            self.error = "Virtual Xbox output is available on Windows only."
-            return
+        self._pad = vg.VX360Gamepad()
+        self._on_rumble = on_rumble
+        self._pad.register_notification(self._notify)
+        self._pad.reset()
+        self._pad.update()
+
+    def _notify(self, client, target, large, small, led, user) -> None:  # ViGEm thread
+        self._on_rumble(int(large), int(small))
+
+    def apply(self, s: PadState) -> None:
+        r = self._pad.report
+        r.wButtons = mapping.xbox_buttons(s.buttons)
+        r.sThumbLX = s.lx
+        r.sThumbLY = s.ly
+        r.sThumbRX = s.rx
+        r.sThumbRY = s.ry
+        r.bLeftTrigger = s.lt
+        r.bRightTrigger = s.rt
+        self._pad.update()
+
+    def close(self) -> None:
         try:
-            import vgamepad as vg
+            self._pad.unregister_notification()
+        except Exception:
+            pass
+        self._pad = None
 
-            self.vg = vg
-            self.pad = vg.VX360Gamepad()
-        except Exception as exc:  # missing ViGEmBus is a runtime, not import, error
-            self.error = f"Virtual gamepad unavailable: {exc}"
+
+class Ds4Engine:
+    """DualShock 4 pad.  Games see 'Wireless Controller'."""
+
+    kind = "ps"
+
+    def __init__(self, on_rumble: RumbleCallback) -> None:
+        import vgamepad as vg
+
+        self._pad = vg.VDS4Gamepad()
+        self._on_rumble = on_rumble
+        self._pad.register_notification(self._notify)
+        self._pad.reset()
+        self._pad.update()
+
+    def _notify(self, client, target, large, small, lightbar, user) -> None:  # ViGEm thread
+        self._on_rumble(int(large), int(small))
+
+    def apply(self, s: PadState) -> None:
+        r = self._pad.report
+        r.bThumbLX, r.bThumbLY, r.bThumbRX, r.bThumbRY = mapping.ds4_axes(s)
+        r.wButtons = mapping.ds4_wbuttons(s)
+        r.bSpecial = mapping.ds4_special(s.buttons)
+        r.bTriggerL, r.bTriggerR = mapping.ds4_triggers(s)
+        self._pad.update()
+
+    def close(self) -> None:
+        try:
+            self._pad.unregister_notification()
+        except Exception:
+            pass
+        self._pad = None
+
+
+class SimulatedEngine:
+    """Stand-in used when no virtual device can be created."""
+
+    def __init__(self, kind: str) -> None:
+        self.kind = kind
+
+    def apply(self, s: PadState) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+
+def _describe(exc: BaseException) -> str:
+    if isinstance(exc, ImportError):
+        return "The vgamepad package is not installed on this system."
+    if isinstance(exc, OSError):
+        return (
+            "Could not create the virtual controller. Check that the ViGEmBus "
+            f"driver is installed and running ({exc})."
+        )
+    return f"Could not create the virtual controller: {type(exc).__name__}: {exc}"
+
+
+class PadManager:
+    """Owns the one virtual pad and can hot-swap between Xbox and PS."""
+
+    def __init__(self, on_rumble: RumbleCallback, kind: str = "xbox") -> None:
+        self._on_rumble = on_rumble
+        self._lock = threading.Lock()
+        self._engine = None
+        self._kind = "xbox"
+        self.simulated = False
+        self.error: str | None = None
+        self.last_state: PadState = NEUTRAL
+        self._open(kind if kind in KINDS else "xbox")
 
     @property
-    def ready(self) -> bool:
-        return self.pad is not None
+    def kind(self) -> str:
+        return self._kind
 
-    def apply(self, state: dict[str, Any]) -> None:
-        if not self.pad or not self.vg:
-            return
-        buttons = self.vg.XUSB_BUTTON
-        names = {
-            "A": "XUSB_GAMEPAD_A", "B": "XUSB_GAMEPAD_B",
-            "X": "XUSB_GAMEPAD_X", "Y": "XUSB_GAMEPAD_Y",
-            "LB": "XUSB_GAMEPAD_LEFT_SHOULDER", "RB": "XUSB_GAMEPAD_RIGHT_SHOULDER",
-            "BACK": "XUSB_GAMEPAD_BACK", "START": "XUSB_GAMEPAD_START",
-            "LS": "XUSB_GAMEPAD_LEFT_THUMB", "RS": "XUSB_GAMEPAD_RIGHT_THUMB",
-            "UP": "XUSB_GAMEPAD_DPAD_UP", "DOWN": "XUSB_GAMEPAD_DPAD_DOWN",
-            "LEFT": "XUSB_GAMEPAD_DPAD_LEFT", "RIGHT": "XUSB_GAMEPAD_DPAD_RIGHT",
-            "GUIDE": "XUSB_GAMEPAD_GUIDE",
-        }
-        pressed = set(state["buttons"])
-        for name in self._pressed - pressed:
-            self.pad.release_button(button=getattr(buttons, names[name]))
-        for name in pressed - self._pressed:
-            if name in names:
-                self.pad.press_button(button=getattr(buttons, names[name]))
-        self._pressed = pressed
-        axes = state["axes"]
-        self.pad.left_joystick(
-            x_value=_stick_value(axes["lx"]),
-            y_value=_stick_value(axes["ly"]),
-        )
-        self.pad.right_joystick(
-            x_value=_stick_value(axes["rx"]),
-            y_value=_stick_value(axes["ry"]),
-        )
-        self.pad.left_trigger(value=state["lt"])
-        self.pad.right_trigger(value=state["rt"])
-        self.pad.update()
+    def _open(self, kind: str) -> None:
+        try:
+            if kind == "xbox":
+                engine = XboxEngine(self._on_rumble)
+            else:
+                engine = Ds4Engine(self._on_rumble)
+            self.simulated = False
+            self.error = None
+        except Exception as exc:  # no vgamepad, no driver, wrong OS, ...
+            log.warning("Virtual pad unavailable, running simulated: %s", exc)
+            engine = SimulatedEngine(kind)
+            self.simulated = True
+            self.error = _describe(exc)
+        self._engine = engine
+        self._kind = kind
+        self.last_state = NEUTRAL
 
-    def release_all(self) -> None:
-        if not self.pad or not self.vg:
-            return
-        buttons = self.vg.XUSB_BUTTON
-        names = {
-            "A": "XUSB_GAMEPAD_A", "B": "XUSB_GAMEPAD_B",
-            "X": "XUSB_GAMEPAD_X", "Y": "XUSB_GAMEPAD_Y",
-            "LB": "XUSB_GAMEPAD_LEFT_SHOULDER", "RB": "XUSB_GAMEPAD_RIGHT_SHOULDER",
-            "BACK": "XUSB_GAMEPAD_BACK", "START": "XUSB_GAMEPAD_START",
-            "LS": "XUSB_GAMEPAD_LEFT_THUMB", "RS": "XUSB_GAMEPAD_RIGHT_THUMB",
-            "UP": "XUSB_GAMEPAD_DPAD_UP", "DOWN": "XUSB_GAMEPAD_DPAD_DOWN",
-            "LEFT": "XUSB_GAMEPAD_DPAD_LEFT", "RIGHT": "XUSB_GAMEPAD_DPAD_RIGHT",
-            "GUIDE": "XUSB_GAMEPAD_GUIDE",
+    def switch(self, kind: str) -> None:
+        if kind not in KINDS:
+            raise ValueError(f"unknown pad type: {kind}")
+        with self._lock:
+            if self._engine is not None:
+                self._engine.close()
+            self._open(kind)
+
+    def apply(self, state: PadState) -> None:
+        if state == self.last_state:
+            return  # nothing changed - don't spam the driver
+        with self._lock:
+            self.last_state = state
+            try:
+                self._engine.apply(state)
+            except Exception as exc:
+                log.error("Failed to update virtual pad: %s", exc)
+                self.error = _describe(exc)
+
+    def reset(self) -> None:
+        """Release everything (used when the phone disconnects or goes silent)."""
+        self.apply(NEUTRAL)
+
+    def status(self) -> dict:
+        return {
+            "kind": self._kind,
+            "simulated": self.simulated,
+            "error": self.error,
+            "driver_installed": driver_installed(),
         }
-        for name in self._pressed:
-            self.pad.release_button(button=getattr(buttons, names[name]))
-        self._pressed.clear()
-        self.pad.left_joystick(x_value=0, y_value=0)
-        self.pad.right_joystick(x_value=0, y_value=0)
-        self.pad.left_trigger(value=0)
-        self.pad.right_trigger(value=0)
-        self.pad.update()
+
+    def close(self) -> None:
+        with self._lock:
+            if self._engine is not None:
+                self._engine.close()
+                self._engine = None

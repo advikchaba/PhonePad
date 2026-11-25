@@ -1,32 +1,48 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Build PhonePad desktop application
+title PhonePad - build exe
 
 if not exist ".venv\Scripts\python.exe" (
-  py -3 -m venv .venv
-  if errorlevel 1 goto :failed
+  echo [!] The Python environment is missing.
+  echo     Run setup.bat once, then run this again.
+  echo.
+  pause
+  exit /b 1
 )
 
-echo Installing desktop application dependencies...
-set "VGAMEPAD_SKIP_VIGEMBUS_INSTALL=true"
-".venv\Scripts\python.exe" -m pip install --disable-pip-version-check --upgrade -r requirements.txt
+if not exist "backend\static\index.html" (
+  echo [!] The web app has not been built yet.
+  echo     Run setup.bat once, then run this again.
+  echo.
+  pause
+  exit /b 1
+)
+
+echo [1/2] Installing PyInstaller...
+".venv\Scripts\python.exe" -m pip install --disable-pip-version-check --quiet "pyinstaller>=6.10"
 if errorlevel 1 goto :failed
 
-echo Building the windowed PhonePad application...
+echo [2/2] Building dist\PhonePad.exe...
+echo       (this takes about a minute)
 ".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean PhonePad.spec
 if errorlevel 1 goto :failed
 
 echo.
-echo Built: dist\PhonePad.exe
-echo Launch PhonePad.exe directly. It opens as a desktop window with no command prompt.
+echo ============================================
+echo   Done: dist\PhonePad.exe
+echo.
+echo   That single file includes Python, the
+echo   server and the web app. Send it to anyone
+echo   on Windows 10/11.
+echo ============================================
 echo.
 pause
 exit /b 0
 
 :failed
 echo.
-echo Build failed. Check the messages above and try again.
+echo [!] Build failed. Scroll up for the error above.
 echo.
 pause
 exit /b 1

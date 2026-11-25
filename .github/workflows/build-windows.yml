@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -29,10 +29,25 @@ jobs:
       - name: Build windowed executable
         run: python -m PyInstaller --noconfirm --clean PhonePad.spec
 
-      - name: Upload Windows app
+      - name: Upload Windows app artifact
         uses: actions/upload-artifact@v4
         with:
           name: PhonePad-Windows
           path: dist/PhonePad.exe
           if-no-files-found: error
           retention-days: 14
+
+      - name: Attach executable to the preview release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-preview
+          name: PhonePad Desktop UI Preview
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: dist/PhonePad.exe
+          body: |
+            Windows desktop build of the PhonePad controller UI prototype.
+
+            **Prototype only:** this checkout does not include the gamepad backend, so button presses are visual and are not sent to games.

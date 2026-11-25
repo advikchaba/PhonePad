@@ -4,7 +4,7 @@ Turn an Android or iPhone browser into a touch controller for Windows games. Pho
 
 ## Install and play
 
-1. Download the latest Windows build: [PhonePad.exe](https://github.com/advikchaba/PhonePad/releases/download/v1.01/PhonePad.exe).
+1. Download the latest Windows build: [PhonePad.exe](https://github.com/advikchaba/PhonePad/releases/download/1.01/PhonePad.exe).
 2. Install the bundled **ViGEmBus** driver when PhonePad offers. Approve the Windows administrator prompt. This one-time driver lets games see the virtual controller.
 3. Start PhonePad on the PC. If Windows Firewall asks, allow it on **private networks**.
 4. Connect the phone and PC to the **same trusted Wi-Fi network**.

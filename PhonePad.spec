@@ -1,33 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for the portable PhonePad.exe.
+"""Windowed, self-contained PhonePad desktop UI prototype."""
+from pathlib import Path
 
-Bundles:
-  * the FastAPI/uvicorn server (backend package)
-  * the built React app (backend/static)
-  * vgamepad plus its ViGEmClient DLLs and the ViGEmBus installer MSI
-"""
+from PyInstaller.utils.hooks import collect_all
 
-from PyInstaller.utils.hooks import collect_all, collect_submodules
-
-vg_datas, vg_binaries, vg_hidden = collect_all("vgamepad")
-
-hiddenimports = list(vg_hidden)
-hiddenimports += collect_submodules("uvicorn")
-hiddenimports += collect_submodules("websockets")
-
-datas = vg_datas + [("backend/static", "backend/static")]
-
+webview_datas, webview_binaries, webview_hidden = collect_all("webview")
+root = Path(SPECPATH)
+frontend = root / "frontend"
 
 a = Analysis(
-    ["app.py"],
-    pathex=[],
-    binaries=vg_binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
+    [str(root / "app.py")],
+    pathex=[str(root)],
+    binaries=webview_binaries,
+    datas=webview_datas + [(str(frontend), "frontend")],
+    hiddenimports=webview_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["tkinter", "unittest"],
+    excludes=["unittest"],
     noarchive=False,
 )
 
@@ -44,11 +34,10 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="assets/PhonePad.ico",
 )

@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101319">
+  <title>PhonePad — Controller</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101319;
+      --panel: #191d25;
+      --muted: #89909e;
+      --text: #f5f6f8;
+      --accent: #9c7bff;
+      --line: rgba(255,255,255,.09);
+      --safe-left: max(18px, env(safe-area-inset-left));
+      --safe-right: max(18px, env(safe-area-inset-right));
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+    body { min-height: 100svh; overflow-x: hidden; }
+    button { color: inherit; font: inherit; }
+    .app { min-height: 100svh; display: flex; flex-direction: column; padding: 0 var(--safe-right) 18px var(--safe-left); }
+    header { height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; color: #fff; font-size: 18px; background: linear-gradient(145deg, #a78bfa, #6c52d9); box-shadow: 0 5px 20px #725be64a; }
+    .brand-name { font-size: 16px; font-weight: 760; letter-spacing: -.03em; }
+    .brand-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 14px; }
+    .connection { color: #a5acb9; font-size: 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f5b84b; box-shadow: 0 0 10px #f5b84b77; }
+    .mode-switch { display: inline-flex; gap: 3px; background: #20242d; border: 1px solid var(--line); padding: 4px; border-radius: 12px; }
+    .mode-switch button { border: 0; border-radius: 9px; padding: 8px 13px; background: transparent; color: #9da4b1; font-size: 12px; font-weight: 650; cursor: pointer; transition: .18s ease; }
+    .mode-switch button[aria-pressed="true"] { color: white; background: #393147; box-shadow: inset 0 0 0 1px #a78bfa45; }
+    main { width: min(1200px, 100%); margin: 0 auto; display: flex; flex: 1; flex-direction: column; justify-content: center; padding: 16px 0 8px; }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 0 8px 8px; }
+    h1 { font-size: clamp(19px, 2.2vw, 26px); line-height: 1.15; margin: 0; letter-spacing: -.04em; }
+    .intro p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .layout-label { font-size: 11px; color: #8f96a5; border: 1px solid var(--line); padding: 7px 10px; border-radius: 9px; white-space: nowrap; }
+    .stage { width: 100%; border-radius: 24px; position: relative; background: radial-gradient(ellipse at 50% 48%, #242833 0%, #191d25 53%, #151820 100%); border: 1px solid rgba(255,255,255,.055); box-shadow: inset 0 1px rgba(255,255,255,.035), 0 20px 60px #0003; overflow: hidden; }
+    .stage::before { content: ""; position: absolute; width: 56%; height: 38%; top: 28%; left: 22%; border-radius: 50%; background: #8970ff0a; filter: blur(45px); pointer-events: none; }
+    svg.controller { display: block; width: 100%; max-height: min(65svh, 590px); margin: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .device { filter: drop-shadow(0 17px 22px #0008); }
+    .key { cursor: pointer; outline: none; touch-action: none; }
+    .key .hit { fill: transparent; pointer-events: all; }
+    .key[data-control="LB"] .hit, .key[data-control="RB"] .hit { stroke: transparent; stroke-width: 18px; vector-effect: non-scaling-stroke; }
+    .key .face { transition: filter .12s ease, transform .12s ease, fill .12s ease; transform-box: fill-box; transform-origin: center; }
+    .key.is-down .face { transform: translateY(2px) scale(.94); filter: brightness(1.42) drop-shadow(0 0 10px #a78bfa88); }
+    .key:focus-visible .focus-ring { opacity: 1; }
+    .focus-ring { opacity: 0; fill: none; stroke: #c4b5fd; stroke-width: 3; stroke-dasharray: 5 4; }
+    .control-label { fill: #aeb4c0; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-anchor: middle; pointer-events: none; }
+    .tiny-label { fill: #9ca3b2; font-size: 9px; font-weight: 700; letter-spacing: .05em; text-anchor: middle; pointer-events: none; }
+    .button-legend { fill: #171920; font-size: 18px; font-weight: 800; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .meta-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 12px 10px 0; color: #8f96a5; font-size: 11px; }
+    .hints { display: flex; align-items: center; gap: 18px; }
+    .hint { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .hint-mark { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #434854; color: #c1c6d1; border-radius: 6px; font-size: 10px; }
+    .inputs { display: flex; align-items: center; gap: 6px; }
+    .input-pill { padding: 5px 8px; min-width: 43px; text-align: center; border-radius: 7px; border: 1px solid var(--line); color: #c5c9d2; background: #191d25; font-weight: 650; }
+    .footnote { color: #666e7b; text-align: center; padding-top: 14px; font-size: 10px; }
+    @media (max-width: 680px) {
+      header { height: 62px; }
+      .brand-sub { display: none; }
+      .connection { font-size: 0; gap: 0; }
+      .connection .dot { width: 9px; height: 9px; }
+      .mode-switch button { padding: 7px 9px; font-size: 11px; }
+      .intro { padding: 0 3px 9px; }
+      .intro p { font-size: 11px; }
+      .layout-label { display: none; }
+      .stage { border-radius: 17px; }
+      svg.controller { max-height: 57svh; }
+      .meta-row { padding: 9px 2px 0; font-size: 10px; }
+      .hints { gap: 9px; }
+      .hint { gap: 5px; }
+      .hint:nth-child(2) { display: none; }
+    }
+    @media (orientation: portrait) and (max-width: 700px) {
+      main { justify-content: flex-start; padding-top: 18px; }
+      .stage { margin-top: 12px; }
+      svg.controller { max-height: none; }
+      .portrait-note { display: block; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      header { height: 52px; }
+      main { padding: 8px 0 0; }
+      .intro { padding-bottom: 4px; }
+      .intro p { margin-top: 3px; }
+      svg.controller { max-height: 70svh; }
+      .meta-row { padding-top: 6px; }
+      .footnote { padding-top: 5px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">⌘</div>
+      <div><div class="brand-name">PhonePad</div><div class="brand-sub">Your phone, your controller</div></div>
+    </div>
+    <div class="header-right">
+      <div class="connection" title="This standalone preview is not connected to a PC"><span class="dot"></span>Preview mode</div>
+      <div class="mode-switch" role="group" aria-label="Controller button style">
+        <button type="button" data-mode="xbox" aria-pressed="true">Xbox</button>
+        <button type="button" data-mode="playstation" aria-pressed="false">PlayStation</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="intro">
+      <div><h1>Controller</h1><p>Hold your phone sideways and play naturally.</p></div>
+      <div class="layout-label">COMFORT LAYOUT <span style="color:#c4b5fd">·</span> shoulders moved inboard</div>
+    </div>
+    <section class="stage" aria-label="Interactive controller preview">
+      <svg class="controller" viewBox="0 0 1000 560" role="group" aria-label="Interactive game controller">
+        <defs>
+          <linearGradient id="shell" x1="0" y1="0" x2=".15" y2="1"><stop stop-color="#444852"/><stop offset=".24" stop-color="#292d36"/><stop offset="1" stop-color="#1d2028"/></linearGradient>
+          <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6d727d" stop-opacity=".72"/><stop offset=".22" stop-color="#3c414b" stop-opacity=".7"/><stop offset="1" stop-color="#101218" stop-opacity=".9"/></linearGradient>
+          <linearGradient id="button" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#555a65"/><stop offset="1" stop-color="#242730"/></linearGradient>
+          <linearGradient id="trigger" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5c616d"/><stop offset="1" stop-color="#272a33"/></linearGradient>
+          <radialGradient id="stick" cx="40%" cy="28%"><stop stop-color="#626773"/><stop offset=".35" stop-color="#3e424d"/><stop offset="1" stop-color="#1a1c23"/></radialGradient>
+          <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+        </defs>
+        <!-- Soft grounded shadow and sculpted controller shell -->
+        <ellipse cx="500" cy="440" rx="355" ry="45" fill="#000" opacity=".45" filter="url(#softShadow)"/>
+        <g class="device">
+          <path d="M169 121 Q190 82 252 80 L348 95 Q403 107 500 107 Q597 107 652 95 L748 80 Q810 82 831 121 Q864 180 879 287 L905 420 Q908 454 877 465 Q849 476 824 446 L754 358 Q726 329 689 331 L311 331 Q274 329 246 358 L176 446 Q151 476 123 465 Q92 454 95 420 L121 287 Q136 180 169 121Z" fill="url(#edge)"/>
+          <path d="M174 128 Q194 91 252 91 L347 105 Q403 117 500 117 Q597 117 653 105 L748 91 Q806 91 826 128 Q853 181 868 286 L892 418 Q895 443 874 452 Q854 460 834 435 L765 347 Q732 307 686 309 L314 309 Q268 307 235 347 L166 435 Q146 460 126 452 Q105 443 108 418 L132 286 Q147 181 174 128Z" fill="url(#shell)" stroke="#727783" stroke-opacity=".3" stroke-width="2"/>
+          <path d="M179 137 Q202 111 250 110 M821 137 Q798 111 750 110" fill="none" stroke="#8d929c" stroke-opacity=".17" stroke-width="3" stroke-linecap="round"/>
+          <path d="M150 364 Q177 389 211 396 M850 364 Q823 389 789 396" fill="none" stroke="#08090d" stroke-opacity=".42" stroke-width="22" stroke-linecap="round"/>
+          <path d="M153 368 Q179 391 210 397 M847 368 Q821 391 790 397" fill="none" stroke="#626773" stroke-opacity=".17" stroke-width="2" stroke-linecap="round"/>
+          <path d="M404 130 Q500 141 596 130" fill="none" stroke="#111319" stroke-opacity=".44" stroke-width="2"/>
+          <circle cx="500" cy="190" r="35" fill="#12141a" stroke="#545965" stroke-width="2"/>
+          <circle cx="500" cy="190" r="27" fill="#252832" stroke="#737884" stroke-opacity=".28"/>
+          <path d="M490 190h20M500 180v20" stroke="#a78bfa" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+          <text x="500" y="247" class="tiny-label">PHONEPAD</text>
+        </g>
+        <!-- Inboard shoulder controls: large hit regions, separated from the glass edge -->
+        <g class="key" data-control="LB" role="button" tabindex="0" aria-label="Left bumper" aria-pressed="false">
+          <rect class="hit" x="188" y="104" width="132" height="72" rx="26"/>
+          <rect class="face" x="209" y="121" width="90" height="31" rx="13" fill="url(#button)" stroke="#777d89" stroke-opacity=".55"/>
+          <rect class="focus-ring" x="202" y="115" width="104" height="44" rx="17"/>
+          <text class="control-label" x="254" y="143">LB</text>
+        </g>
+        <g class="key" data-control="RB" role="button" tabindex="0" aria-label="Right bumper" aria-pressed="false">
+          <rect class="hit" x="680" y="104" width="132" height="72" rx="26"/>
+          <rect class="face" x="701" y="121" width="90" height="31" rx="13" fill="url(#button)" stroke="#777d89" stroke-opacity=".55"/>
+          <rect class="focus-ring" x="694" y="115" width="104" height="44" rx="17"/>
+          <text class="control-label" x="746" y="143">RB</text>
+        </g>
+        <g class="key" data-control="LT" data-trigger="left" role="button" tabindex="0" aria-label="Left trigger" aria-pressed="false">
+          <rect class="hit" x="171" y="162" width="128" height="76" rx="25"/>
+          <path d="M195 173 Q200 158 218 158 H281 Q291 158 293 174 L286 202 Q282 215 267 215 H214 Q200 215 197 202Z" fill="#15171e" stroke="#666b76" stroke-opacity=".44" stroke-width="2"/>
+          <path class="face" d="M204 174 Q208 166 220 166 H276 Q283 166 284 176 L279 196 Q277 204 266 204 H217 Q207 204 205 196Z" fill="url(#trigger)" stroke="#828793" stroke-opacity=".28"/>
+          <rect class="trigger-fill" x="209" y="190" width="70" height="0" rx="6" fill="#a78bfa" opacity=".9"/>
+          <text class="tiny-label" x="245" y="188">LT</text>
+        </g>
+        <g class="key" data-control="RT" data-trigger="right" role="button" tabindex="0" aria-label="Right trigger" aria-pressed="false">
+          <rect class="hit" x="701" y="162" width="128" height="76" rx="25"/>
+          <path d="M707 173 Q709 158 719 158 H782 Q800 158 805 173 L803 202 Q800 215 786 215 H733 Q718 215 714 202Z" fill="#15171e" stroke="#666b76" stroke-opacity=".44" stroke-width="2"/>
+          <path class="face" d="M716 176 Q717 166 724 166 H780 Q792 166 796 174 L795 196 Q793 204 783 204 H734 Q723 204 721 196Z" fill="url(#trigger)" stroke="#828793" stroke-opacity=".28"/>
+          <rect class="trigger-fill" x="721" y="190" width="70" height="0" rx="6" fill="#a78bfa" opacity=".9"/>
+          <text class="tiny-label" x="755" y="188">RT</text>
+        </g>
+        <!-- D-pad -->
+        <g class="key" data-control="D-pad Up" role="button" tabindex="0" aria-label="D-pad up" aria-pressed="false"><circle class="hit" cx="286" cy="247" r="38"/><path class="face" d="M286 215 L303 239 H269Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="286" cy="231" r="23"/></g>
+        <g class="key" data-control="D-pad Left" role="button" tabindex="0" aria-label="D-pad left" aria-pressed="false"><circle class="hit" cx="260" cy="273" r="38"/><path class="face" d="M228 273 L252 256 V290Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="244" cy="273" r="23"/></g>
+        <g class="key" data-control="D-pad Down" role="button" tabindex="0" aria-label="D-pad down" aria-pressed="false"><circle class="hit" cx="286" cy="299" r="38"/><path class="face" d="M286 331 L269 307 H303Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="286" cy="315" r="23"/></g>
+        <g class="key" data-control="D-pad Right" role="button" tabindex="0" aria-label="D-pad right" aria-pressed="false"><circle class="hit" cx="312" cy="273" r="38"/><path class="face" d="M344 273 L320 290 V256Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="328" cy="273" r="23"/></g>
+        <!-- Left analog stick -->
+        <g class="key stick" data-stick="Left stick" role="button" tabindex="0" aria-label="Move left stick" aria-pressed="false">
+          <circle class="hit" cx="370" cy="259" r="67"/><circle cx="370" cy="259" r="49" fill="#111319" stroke="#4b505b" stroke-width="3"/>
+          <circle cx="370" cy="259" r="41" fill="url(#stick)" stroke="#727783" stroke-opacity=".36" stroke-width="2"/>
+          <circle class="stick-cap" cx="370" cy="259" r="28" fill="url(#button)" stroke="#777d88" stroke-opacity=".42" stroke-width="2"/>
+          <path d="M354 250 Q370 240 386 250 M354 268 Q370 278 386 268" fill="none" stroke="#777d88" stroke-opacity=".28" stroke-width="2"/>
+          <circle class="focus-ring" cx="370" cy="259" r="56"/>
+        </g>
+        <!-- Center menu controls -->
+        <g class="key" data-control="View" role="button" tabindex="0" aria-label="View button" aria-pressed="false"><rect class="hit" x="423" y="220" width="50" height="62" rx="22"/><rect class="face" x="432" y="238" width="34" height="9" rx="5" fill="#14161c" stroke="#7a808a" stroke-opacity=".5"/><text class="tiny-label" x="449" y="267">VIEW</text></g>
+        <g class="key" data-control="Menu" role="button" tabindex="0" aria-label="Menu button" aria-pressed="false"><rect class="hit" x="527" y="220" width="50" height="62" rx="22"/><rect class="face" x="534" y="238" width="34" height="9" rx="5" fill="#14161c" stroke="#7a808a" stroke-opacity=".5"/><text class="tiny-label" x="551" y="267">MENU</text></g>
+        <!-- Face buttons -->
+        <g class="key" data-control="Y" data-face="top" role="button" tabindex="0" aria-label="Y button" aria-pressed="false"><circle class="hit" cx="727" cy="218" r="40"/><circle class="face" cx="727" cy="218" r="22" fill="#d6a83e" stroke="#f1d27d" stroke-opacity=".5"/><circle class="focus-ring" cx="727" cy="218" r="30"/><text class="button-legend" data-legend="Y" x="727" y="218">Y</text></g>
+        <g class="key" data-control="B" data-face="right" role="button" tabindex="0" aria-label="B button" aria-pressed="false"><circle class="hit" cx="762" cy="253" r="40"/><circle class="face" cx="762" cy="253" r="22" fill="#df625b" stroke="#f19b94" stroke-opacity=".5"/><circle class="focus-ring" cx="762" cy="253" r="30"/><text class="button-legend" data-legend="B" x="762" y="253">B</text></g>
+        <g class="key" data-control="A" data-face="bottom" role="button" tabindex="0" aria-label="A button" aria-pressed="false"><circle class="hit" cx="727" cy="288" r="40"/><circle class="face" cx="727" cy="288" r="22" fill="#61b878" stroke="#a0e4ac" stroke-opacity=".48"/><circle class="focus-ring" cx="727" cy="288" r="30"/><text class="button-legend" data-legend="A" x="727" y="288">A</text></g>
+        <g class="key" data-control="X" data-face="left" role="button" tabindex="0" aria-label="X button" aria-pressed="false"><circle class="hit" cx="692" cy="253" r="40"/><circle class="face" cx="692" cy="253" r="22" fill="#568fdb" stroke="#9dc3f5" stroke-opacity=".5"/><circle class="focus-ring" cx="692" cy="253" r="30"/><text class="button-legend" data-legend="X" x="692" y="253">X</text></g>
+        <!-- Right stick and home button -->
+        <g class="key stick" data-stick="Right stick" role="button" tabindex="0" aria-label="Move right stick" aria-pressed="false">
+          <circle class="hit" cx="630" cy="329" r="67"/><circle cx="630" cy="329" r="49" fill="#111319" stroke="#4b505b" stroke-width="3"/>
+          <circle cx="630" cy="329" r="41" fill="url(#stick)" stroke="#727783" stroke-opacity=".36" stroke-width="2"/>
+          <circle class="stick-cap" cx="630" cy="329" r="28" fill="url(#button)" stroke="#777d88" stroke-opacity=".42" stroke-width="2"/>
+          <path d="M614 320 Q630 310 646 320 M614 338 Q630 348 646 338" fill="none" stroke="#777d88" stroke-opacity=".28" stroke-width="2"/>
+          <circle class="focus-ring" cx="630" cy="329" r="56"/>
+        </g>
+        <g class="key" data-control="Guide" role="button" tabindex="0" aria-label="Guide button" aria-pressed="false"><circle class="hit" cx="500" cy="304" r="34"/><circle class="face" cx="500" cy="304" r="14" fill="#30343e" stroke="#818692" stroke-opacity=".55"/><path d="M494 303h12M500 297v12" stroke="#c9c1ff" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>
+      </svg>
+    </section>
+    <div class="meta-row">
+      <div class="hints"><div class="hint"><span class="hint-mark">●</span> Hold to press</div><div class="hint"><span class="hint-mark">↔</span> Drag sticks</div><div class="hint"><span class="hint-mark">⌁</span> Multi-touch</div></div>
+      <div class="inputs" aria-live="polite"><span>INPUT</span><span class="input-pill" id="input-left">LX 0 · LY 0</span><span class="input-pill" id="input-right">RX 0 · RY 0</span></div>
+    </div>
+    <div class="footnote">Touch targets are deliberately larger than the drawn buttons. Shoulder controls are inset from the screen edge.</div>
+  </main>
+</div>
+<script>
+(() => {
+  const svg = document.querySelector('svg.controller');
+  const active = new Map();
+  const stickCenters = { 'Left stick': [370, 259], 'Right stick': [630, 329] };
+  const inputLeft = document.querySelector('#input-left');
+  const inputRight = document.querySelector('#input-right');
+  const setPressed = (el, down) => {
+    if (!el) return;
+    el.classList.toggle('is-down', down);
+    el.setAttribute('aria-pressed', String(down));
+    if (el.dataset.trigger) {
+      const fill = el.querySelector('.trigger-fill');
+      fill?.setAttribute('height', down ? '10' : '0');
+      fill?.setAttribute('y', down ? '190' : '190');
+    }
+  };
+  const eventPoint = (evt) => {
+    const p = svg.createSVGPoint(); p.x = evt.clientX; p.y = evt.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  };
+  const updateStick = (name, evt, el) => {
+    const [cx, cy] = stickCenters[name];
+    const p = eventPoint(evt);
+    let dx = p.x - cx, dy = p.y - cy;
+    const distance = Math.hypot(dx, dy), radius = 25;
+    if (distance > radius) { dx = dx / distance * radius; dy = dy / distance * radius; }
+    const cap = el.querySelector('.stick-cap');
+    cap.setAttribute('cx', cx + dx); cap.setAttribute('cy', cy + dy);
+    const x = Math.round(dx / radius * 100), y = Math.round(-dy / radius * 100);
+    (name === 'Left stick' ? inputLeft : inputRight).textContent = `${name === 'Left stick' ? 'LX' : 'RX'} ${x} · ${name === 'Left stick' ? 'LY' : 'RY'} ${y}`;
+  };
+  const resetStick = (el) => {
+    const name = el.dataset.stick, [cx, cy] = stickCenters[name];
+    const cap = el.querySelector('.stick-cap'); cap.setAttribute('cx', cx); cap.setAttribute('cy', cy);
+    (name === 'Left stick' ? inputLeft : inputRight).textContent = name === 'Left stick' ? 'LX 0 · LY 0' : 'RX 0 · RY 0';
+    setPressed(el, false);
+  };
+  const onDown = (evt) => {
+    const el = evt.target.closest('[data-control], [data-stick]');
+    if (!el) return;
+    evt.preventDefault();
+    el.focus({ preventScroll: true });
+    svg.setPointerCapture(evt.pointerId);
+    active.set(evt.pointerId, el);
+    if (el.dataset.stick) { setPressed(el, true); updateStick(el.dataset.stick, evt, el); }
+    else setPressed(el, true);
+  };
+  const onMove = (evt) => {
+    const el = active.get(evt.pointerId);
+    if (!el) return;
+    if (el.dataset.stick) { updateStick(el.dataset.stick, evt, el); return; }
+    // Pointer capture keeps the stream alive; hit-test the current finger location
+    // separately so sliding from one button to another still feels natural.
+    const hit = document.elementFromPoint(evt.clientX, evt.clientY);
+    const next = hit?.closest?.('[data-control]');
+    if (next && next !== el) { setPressed(el, false); setPressed(next, true); active.set(evt.pointerId, next); }
+  };
+  const onUp = (evt) => {
+    const el = active.get(evt.pointerId);
+    if (!el) return;
+    active.delete(evt.pointerId);
+    if (el.dataset.stick) resetStick(el); else setPressed(el, false);
+    if (svg.hasPointerCapture(evt.pointerId)) svg.releasePointerCapture(evt.pointerId);
+  };
+  svg.addEventListener('pointerdown', onDown);
+  svg.addEventListener('pointermove', onMove);
+  svg.addEventListener('pointerup', onUp);
+  svg.addEventListener('pointercancel', onUp);
+  svg.addEventListener('lostpointercapture', onUp);
+  document.querySelectorAll('.mode-switch button').forEach(button => button.addEventListener('click', () => {
+    const ps = button.dataset.mode === 'playstation';
+    document.querySelectorAll('.mode-switch button').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+    const legends = ps ? { Y: '△', B: '○', A: '✕', X: '□' } : { Y: 'Y', B: 'B', A: 'A', X: 'X' };
+    Object.entries(legends).forEach(([key, label]) => {
+      const text = document.querySelector(`[data-legend="${key}"]`);
+      text.textContent = label;
+      text.closest('[data-control]').setAttribute('aria-label', `${label} button`);
+    });
+    const shoulderLabels = ps
+      ? { LB: ['L1', 'Left shoulder button'], RB: ['R1', 'Right shoulder button'], LT: ['L2', 'Left trigger'], RT: ['R2', 'Right trigger'] }
+      : { LB: ['LB', 'Left bumper'], RB: ['RB', 'Right bumper'], LT: ['LT', 'Left trigger'], RT: ['RT', 'Right trigger'] };
+    Object.entries(shoulderLabels).forEach(([id, [label, accessible]]) => {
+      const control = document.querySelector(`[data-control="${id}"]`);
+      control.setAttribute('aria-label', accessible);
+      control.querySelector('.control-label, .tiny-label').textContent = label;
+    });
+    const centerLabels = ps ? { View: ['SHARE', 'Share'], Menu: ['OPTIONS', 'Options'] } : { View: ['VIEW', 'View'], Menu: ['MENU', 'Menu'] };
+    Object.entries(centerLabels).forEach(([id, [label, accessible]]) => {
+      const control = document.querySelector(`[data-control="${id}"]`);
+      control.querySelector('.tiny-label').textContent = label;
+      control.setAttribute('aria-label', `${accessible} button`);
+    });
+    document.querySelector('[data-control="Guide"]').setAttribute('aria-label', ps ? 'PlayStation button' : 'Guide button');
+  }));
+  document.querySelectorAll('[data-control], [data-stick]').forEach(el => {
+    el.addEventListener('keydown', evt => {
+      if (evt.key === ' ' || evt.key === 'Enter') { evt.preventDefault(); setPressed(el, true); }
+    });
+    el.addEventListener('keyup', evt => {
+      if (evt.key === ' ' || evt.key === 'Enter') { evt.preventDefault(); setPressed(el, false); }
+    });
+    el.addEventListener('blur', () => setPressed(el, false));
+  });
+})();
+</script>
+</body>
+</html>

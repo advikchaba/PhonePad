@@ -195,13 +195,15 @@ If `joy.cpl` is empty, the driver or the virtual device is not working; see belo
 ```
 backend/
   main.py         FastAPI app: API, WebSockets, static files, banner
-  pad.py          ViGEmBus engine (Xbox 360 / DS4), rumble, hot-swap
-  protocol.py     binary input packets + state JSON
+  pad.py          ViGEmBus engine (Xbox 360 / DS4), simulated fallback, hot-swap
+  protocol.py     binary packet format
+  mapping.py      button bits -> Xbox / DS4 report
+  tests/          unittest suite (python -m unittest discover -s backend/tests -t .)
   static/         built React app (generated)
 frontend/
   src/host/       desktop dashboard, QR code, live mirror
-  src/phone/      start screen, touch controller, settings sheet
-  src/lib/        WebSocket hook, packet builder
+  src/phone/      start screen, touch controller
+  src/lib/        input engine (multi-touch), WebSocket link, protocol
 app.py            launcher: driver check, then starts the server
 PhonePad.spec     PyInstaller recipe
 setup.bat         one-time install + build (source)
@@ -212,17 +214,16 @@ dist/             packaged executable (generated)
 
 ### Protocol (for the curious)
 
-The phone sends a 10-byte binary packet per update instead of JSON:
+Input is a 13-byte binary WebSocket message (big-endian), sent as a full state snapshot whenever something changes:
 
 | Bytes | Content |
 | --- | --- |
-| 0 | message type (`1` input, `2` ping) |
-| 1-2 | 16 button bits (A, B, X, Y, LB, RB, Back, Start, LS, RS, D-pad, Guide, touchpad) |
-| 3-6 | left stick X / Y, right stick X / Y (`0..255`, `128` = center) |
-| 7-8 | left trigger, right trigger (`0..255`) |
-| 9 | rolling sequence number |
+| 0 | message type (`1` input) |
+| 1-2 | 16 button bits (bits 0-10 match XINPUT; 11 touchpad; 12-15 A B X Y) |
+| 3-10 | left stick X / Y, right stick X / Y (signed 16-bit, +Y = up) |
+| 11-12 | left trigger, right trigger (`0..255`) |
 
-The phone sends at up to 120 Hz (animation frames + immediate sends on press/release); the server writes the state to the virtual pad every 4 ms and streams the live state to the desktop dashboard at 30 Hz.
+Latency: the phone sends a 9-byte ping every 500 ms and the server echoes it back. Stale stick positions are never queued: if the socket is congested only the newest state is sent. The server writes each changed state to the virtual pad immediately, and releases all inputs if the phone goes silent for 2 seconds.
 
 ---
 

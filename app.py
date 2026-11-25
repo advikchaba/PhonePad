@@ -65,10 +65,10 @@ def _install_driver(msi: Path) -> bool:
 
 
 def ensure_driver() -> None:
-    """Explain / install ViGEmBus when it is missing."""
+    """Explain / install ViGEmBus when it is missing (Windows only)."""
     from backend.pad import driver_installed
 
-    if driver_installed():
+    if sys.platform != "win32" or driver_installed():
         return
 
     line = "=" * 64

@@ -5,6 +5,12 @@ on:
     branches:
       - arena/7ea85c15-phonepad
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to build and publish (for example, v1.01)"
+        required: false
+        default: desktop-preview
+        type: string
 
 permissions:
   contents: write
@@ -39,17 +45,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Attach executable to the preview release
+      - name: Attach executable to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: desktop-preview
-          name: PhonePad Desktop UI Preview
-          prerelease: true
-          make_latest: false
+          tag_name: ${{ inputs.release_tag || 'desktop-preview' }}
+          name: ${{ github.event_name == 'push' && 'PhonePad Desktop Preview' || inputs.release_tag == 'desktop-preview' && 'PhonePad Desktop Preview' || format('PhonePad {0}', inputs.release_tag) }}
+          prerelease: ${{ github.event_name == 'push' || inputs.release_tag == 'desktop-preview' }}
+          make_latest: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != 'desktop-preview' }}
           overwrite_files: true
           fail_on_unmatched_files: true
           files: dist/PhonePad.exe
           body: |
-            Windows desktop build of the PhonePad controller UI prototype.
+            Windows desktop app. Connect a phone on the same Wi-Fi network, scan the QR code, and use its inputs as a virtual Xbox controller.
 
-            **Prototype only:** this checkout does not include the gamepad backend, so button presses are visual and are not sent to games.
+            ViGEmBus is required; PhonePad offers the bundled driver installer on first launch.

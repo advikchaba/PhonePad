@@ -4,7 +4,7 @@ Use your phone as a wireless **keyboard-and-mouse controller** for PC games. Pho
 
 ## Download and play
 
-1. Download [PhonePad 1.04 for Windows](https://github.com/advikchaba/PhonePad/releases/download/1.04/PhonePad.exe).
+1. Download [PhonePad 1.05 for Windows](https://github.com/advikchaba/PhonePad/releases/download/1.05/PhonePad.exe).
 2. Open `PhonePad.exe` on the PC. It starts as a desktop window without a command prompt.
 3. If Windows Firewall asks, allow PhonePad on **private networks**.
 4. Connect the phone and PC to the same trusted Wi-Fi network.

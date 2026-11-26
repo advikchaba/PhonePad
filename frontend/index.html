@@ -99,6 +99,33 @@
       .intro, .meta-row, .footnote { display: none; }
       .stage { border-radius: 0; border-left: 0; border-right: 0; }
     }
+    /* Full-screen touch layout: floating controls, no controller body or card. */
+    html, body { min-height: 100%; height: 100%; background: #101319; }
+    body { min-height: 100svh; height: 100svh; overflow: hidden; }
+    .app { height: 100svh; min-height: 100svh; padding: env(safe-area-inset-top) max(10px, env(safe-area-inset-right)) 4px max(10px, env(safe-area-inset-left)); }
+    header { height: 50px; border-bottom: 0; }
+    .brand-mark { width: 29px; height: 29px; border-radius: 9px; font-size: 16px; }
+    .brand-name { font-size: 14px; }
+    .brand-sub, .intro, .meta-row, .footnote { display: none; }
+    .header-right { gap: 10px; }
+    main { width: 100%; min-height: 0; margin: 0 auto; flex: 1; padding: 0; justify-content: stretch; }
+    .stage { display: flex; flex: 1; min-height: 0; width: 100%; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+    .stage::before { display: none; }
+    svg.controller { width: 100%; height: 100%; max-height: none; margin: auto; }
+    .button-legend { font-size: 26px; fill: #171a20; }
+    .key .face { transition: filter .1s ease, transform .1s ease; }
+    .key.is-down .face { transform: translateY(3px) scale(.96); filter: brightness(1.35) drop-shadow(0 0 12px #a78bfa99); }
+    @media (orientation: portrait) and (max-width: 700px) {
+      /* Keep controls usable if the browser cannot lock landscape. */
+      .app { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+      header { height: 48px; }
+      .stage { align-items: center; justify-content: center; overflow: visible; }
+      svg.controller { flex: none; width: calc(100svh - 58px); height: calc(100vw - 54px); max-height: none; transform: rotate(90deg); }
+    }
+    @media (orientation: landscape) and (max-height: 420px) {
+      header { height: 42px; }
+      .app { padding-bottom: 2px; }
+    }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
   </style>
 </head>
@@ -123,86 +150,71 @@
       <div class="layout-label">COMFORT LAYOUT <span style="color:#c4b5fd">·</span> shoulders moved inboard</div>
     </div>
     <section class="stage" aria-label="Interactive phone game controller">
-      <svg class="controller" viewBox="0 70 1000 410" role="group" aria-label="Interactive game controller">
+      <svg class="controller" viewBox="0 0 1000 450" role="group" aria-label="Interactive game controller" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <linearGradient id="shell" x1="0" y1="0" x2=".15" y2="1"><stop stop-color="#444852"/><stop offset=".24" stop-color="#292d36"/><stop offset="1" stop-color="#1d2028"/></linearGradient>
-          <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6d727d" stop-opacity=".72"/><stop offset=".22" stop-color="#3c414b" stop-opacity=".7"/><stop offset="1" stop-color="#101218" stop-opacity=".9"/></linearGradient>
-          <linearGradient id="button" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#555a65"/><stop offset="1" stop-color="#242730"/></linearGradient>
-          <linearGradient id="trigger" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5c616d"/><stop offset="1" stop-color="#272a33"/></linearGradient>
-          <radialGradient id="stick" cx="40%" cy="28%"><stop stop-color="#626773"/><stop offset=".35" stop-color="#3e424d"/><stop offset="1" stop-color="#1a1c23"/></radialGradient>
-          <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+          <linearGradient id="button" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#454b58"/><stop offset="1" stop-color="#252a34"/></linearGradient>
+          <linearGradient id="trigger" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#4b5260"/><stop offset="1" stop-color="#292e39"/></linearGradient>
+          <radialGradient id="stick" cx="38%" cy="28%"><stop stop-color="#606878"/><stop offset="1" stop-color="#303642"/></radialGradient>
+          <filter id="buttonShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000" flood-opacity=".32"/></filter>
         </defs>
-        <!-- Soft grounded shadow and sculpted controller shell -->
-        <ellipse cx="500" cy="440" rx="355" ry="45" fill="#000" opacity=".45" filter="url(#softShadow)"/>
-        <g class="device">
-          <path d="M169 121 Q190 82 252 80 L348 95 Q403 107 500 107 Q597 107 652 95 L748 80 Q810 82 831 121 Q864 180 879 287 L905 420 Q908 454 877 465 Q849 476 824 446 L754 358 Q726 329 689 331 L311 331 Q274 329 246 358 L176 446 Q151 476 123 465 Q92 454 95 420 L121 287 Q136 180 169 121Z" fill="url(#edge)"/>
-          <path d="M174 128 Q194 91 252 91 L347 105 Q403 117 500 117 Q597 117 653 105 L748 91 Q806 91 826 128 Q853 181 868 286 L892 418 Q895 443 874 452 Q854 460 834 435 L765 347 Q732 307 686 309 L314 309 Q268 307 235 347 L166 435 Q146 460 126 452 Q105 443 108 418 L132 286 Q147 181 174 128Z" fill="url(#shell)" stroke="#727783" stroke-opacity=".3" stroke-width="2"/>
-          <path d="M179 137 Q202 111 250 110 M821 137 Q798 111 750 110" fill="none" stroke="#8d929c" stroke-opacity=".17" stroke-width="3" stroke-linecap="round"/>
-          <path d="M150 364 Q177 389 211 396 M850 364 Q823 389 789 396" fill="none" stroke="#08090d" stroke-opacity=".42" stroke-width="22" stroke-linecap="round"/>
-          <path d="M153 368 Q179 391 210 397 M847 368 Q821 391 790 397" fill="none" stroke="#626773" stroke-opacity=".17" stroke-width="2" stroke-linecap="round"/>
-          <path d="M404 130 Q500 141 596 130" fill="none" stroke="#111319" stroke-opacity=".44" stroke-width="2"/>
-          <circle cx="500" cy="190" r="35" fill="#12141a" stroke="#545965" stroke-width="2"/>
-          <circle cx="500" cy="190" r="27" fill="#252832" stroke="#737884" stroke-opacity=".28"/>
-          <path d="M490 190h20M500 180v20" stroke="#a78bfa" stroke-width="3" stroke-linecap="round" opacity=".9"/>
-          <text x="500" y="247" class="tiny-label">PHONEPAD</text>
-        </g>
-        <!-- Inboard shoulder controls: large hit regions, separated from the glass edge -->
+        <!-- Floating controls: no controller shell underneath -->
         <g class="key" data-control="LB" role="button" tabindex="0" aria-label="Left bumper" aria-pressed="false">
-          <rect class="hit" x="188" y="70" width="132" height="92" rx="26"/>
-          <rect class="face" x="209" y="121" width="90" height="31" rx="13" fill="url(#button)" stroke="#777d89" stroke-opacity=".55"/>
-          <rect class="focus-ring" x="202" y="115" width="104" height="44" rx="17"/>
-          <text class="control-label" x="254" y="143">LB</text>
-        </g>
-        <g class="key" data-control="RB" role="button" tabindex="0" aria-label="Right bumper" aria-pressed="false">
-          <rect class="hit" x="680" y="70" width="132" height="92" rx="26"/>
-          <rect class="face" x="701" y="121" width="90" height="31" rx="13" fill="url(#button)" stroke="#777d89" stroke-opacity=".55"/>
-          <rect class="focus-ring" x="694" y="115" width="104" height="44" rx="17"/>
-          <text class="control-label" x="746" y="143">RB</text>
+          <rect class="hit" x="82" y="16" width="170" height="88" rx="28"/>
+          <rect class="face" x="96" y="34" width="142" height="54" rx="18" fill="url(#button)" stroke="#727b8b" stroke-opacity=".56" filter="url(#buttonShadow)"/>
+          <text class="control-label" x="167" y="68">LB</text><rect class="focus-ring" x="90" y="28" width="154" height="66" rx="22"/>
         </g>
         <g class="key" data-control="LT" data-trigger="left" role="button" tabindex="0" aria-label="Left trigger" aria-pressed="false">
-          <rect class="hit" x="171" y="162" width="128" height="76" rx="25"/>
-          <path d="M195 173 Q200 158 218 158 H281 Q291 158 293 174 L286 202 Q282 215 267 215 H214 Q200 215 197 202Z" fill="#15171e" stroke="#666b76" stroke-opacity=".44" stroke-width="2"/>
-          <path class="face" d="M204 174 Q208 166 220 166 H276 Q283 166 284 176 L279 196 Q277 204 266 204 H217 Q207 204 205 196Z" fill="url(#trigger)" stroke="#828793" stroke-opacity=".28"/>
-          <rect class="trigger-fill" x="209" y="190" width="70" height="0" rx="6" fill="#a78bfa" opacity=".9"/>
-          <text class="tiny-label" x="245" y="188">LT</text>
+          <rect class="hit" x="258" y="16" width="170" height="88" rx="28"/>
+          <rect class="face" x="272" y="34" width="142" height="54" rx="18" fill="url(#trigger)" stroke="#727b8b" stroke-opacity=".56" filter="url(#buttonShadow)"/>
+          <rect class="trigger-fill" x="293" y="77" width="100" height="0" rx="5" fill="#a78bfa" opacity=".95"/>
+          <text class="control-label" x="343" y="68">LT</text><rect class="focus-ring" x="266" y="28" width="154" height="66" rx="22"/>
         </g>
         <g class="key" data-control="RT" data-trigger="right" role="button" tabindex="0" aria-label="Right trigger" aria-pressed="false">
-          <rect class="hit" x="701" y="162" width="128" height="76" rx="25"/>
-          <path d="M707 173 Q709 158 719 158 H782 Q800 158 805 173 L803 202 Q800 215 786 215 H733 Q718 215 714 202Z" fill="#15171e" stroke="#666b76" stroke-opacity=".44" stroke-width="2"/>
-          <path class="face" d="M716 176 Q717 166 724 166 H780 Q792 166 796 174 L795 196 Q793 204 783 204 H734 Q723 204 721 196Z" fill="url(#trigger)" stroke="#828793" stroke-opacity=".28"/>
-          <rect class="trigger-fill" x="721" y="190" width="70" height="0" rx="6" fill="#a78bfa" opacity=".9"/>
-          <text class="tiny-label" x="755" y="188">RT</text>
+          <rect class="hit" x="572" y="16" width="170" height="88" rx="28"/>
+          <rect class="face" x="586" y="34" width="142" height="54" rx="18" fill="url(#trigger)" stroke="#727b8b" stroke-opacity=".56" filter="url(#buttonShadow)"/>
+          <rect class="trigger-fill" x="607" y="77" width="100" height="0" rx="5" fill="#a78bfa" opacity=".95"/>
+          <text class="control-label" x="657" y="68">RT</text><rect class="focus-ring" x="580" y="28" width="154" height="66" rx="22"/>
         </g>
-        <!-- D-pad -->
-        <g class="key" data-control="D-pad Up" role="button" tabindex="0" aria-label="D-pad up" aria-pressed="false"><circle class="hit" cx="286" cy="247" r="38"/><path class="face" d="M286 215 L303 239 H269Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="286" cy="231" r="23"/></g>
-        <g class="key" data-control="D-pad Left" role="button" tabindex="0" aria-label="D-pad left" aria-pressed="false"><circle class="hit" cx="260" cy="273" r="38"/><path class="face" d="M228 273 L252 256 V290Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="244" cy="273" r="23"/></g>
-        <g class="key" data-control="D-pad Down" role="button" tabindex="0" aria-label="D-pad down" aria-pressed="false"><circle class="hit" cx="286" cy="299" r="38"/><path class="face" d="M286 331 L269 307 H303Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="286" cy="315" r="23"/></g>
-        <g class="key" data-control="D-pad Right" role="button" tabindex="0" aria-label="D-pad right" aria-pressed="false"><circle class="hit" cx="312" cy="273" r="38"/><path class="face" d="M344 273 L320 290 V256Z" fill="url(#button)" stroke="#6f7480" stroke-opacity=".45"/><circle class="focus-ring" cx="328" cy="273" r="23"/></g>
-        <!-- Left analog stick -->
+        <g class="key" data-control="RB" role="button" tabindex="0" aria-label="Right bumper" aria-pressed="false">
+          <rect class="hit" x="748" y="16" width="170" height="88" rx="28"/>
+          <rect class="face" x="762" y="34" width="142" height="54" rx="18" fill="url(#button)" stroke="#727b8b" stroke-opacity=".56" filter="url(#buttonShadow)"/>
+          <text class="control-label" x="833" y="68">RB</text><rect class="focus-ring" x="756" y="28" width="154" height="66" rx="22"/>
+        </g>
+        <!-- Compact system buttons, separated from the play controls -->
+        <g class="key" data-control="View" role="button" tabindex="0" aria-label="View button" aria-pressed="false">
+          <rect class="hit" x="414" y="101" width="78" height="58" rx="18"/><rect class="face" x="422" y="108" width="62" height="44" rx="15" fill="url(#button)" stroke="#68707e" stroke-opacity=".5" filter="url(#buttonShadow)"/>
+          <text class="tiny-label" x="453" y="136">VIEW</text><rect class="focus-ring" x="418" y="104" width="70" height="52" rx="17"/>
+        </g>
+        <g class="key" data-control="Menu" role="button" tabindex="0" aria-label="Menu button" aria-pressed="false">
+          <rect class="hit" x="508" y="101" width="78" height="58" rx="18"/><rect class="face" x="516" y="108" width="62" height="44" rx="15" fill="url(#button)" stroke="#68707e" stroke-opacity=".5" filter="url(#buttonShadow)"/>
+          <text class="tiny-label" x="547" y="136">MENU</text><rect class="focus-ring" x="512" y="104" width="70" height="52" rx="17"/>
+        </g>
+        <g class="key" data-control="Guide" role="button" tabindex="0" aria-label="Guide button" aria-pressed="false">
+          <circle class="hit" cx="500" cy="188" r="38"/><circle class="face" cx="500" cy="188" r="25" fill="url(#button)" stroke="#747c8a" stroke-opacity=".6" filter="url(#buttonShadow)"/><path d="M490 188h20M500 178v20" stroke="#c9c1ff" stroke-width="3" stroke-linecap="round" opacity=".9"/><circle class="focus-ring" cx="500" cy="188" r="33"/>
+        </g>
+        <!-- D-pad: generous individual targets -->
+        <g class="key" data-control="D-pad Up" role="button" tabindex="0" aria-label="D-pad up" aria-pressed="false"><rect class="hit" x="91" y="202" width="78" height="78" rx="22"/><rect class="face" x="98" y="209" width="64" height="64" rx="20" fill="url(#button)" stroke="#6f7785" stroke-opacity=".55" filter="url(#buttonShadow)"/><path d="M130 222v34m-12-12 12-14 12 14" fill="none" stroke="#e3e6ec" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle class="focus-ring" cx="130" cy="241" r="39"/></g>
+        <g class="key" data-control="D-pad Left" role="button" tabindex="0" aria-label="D-pad left" aria-pressed="false"><rect class="hit" x="17" y="276" width="78" height="78" rx="22"/><rect class="face" x="24" y="283" width="64" height="64" rx="20" fill="url(#button)" stroke="#6f7785" stroke-opacity=".55" filter="url(#buttonShadow)"/><path d="M77 315H43m12-12-14 12 14 12" fill="none" stroke="#e3e6ec" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle class="focus-ring" cx="56" cy="315" r="39"/></g>
+        <g class="key" data-control="D-pad Down" role="button" tabindex="0" aria-label="D-pad down" aria-pressed="false"><rect class="hit" x="91" y="350" width="78" height="78" rx="22"/><rect class="face" x="98" y="357" width="64" height="64" rx="20" fill="url(#button)" stroke="#6f7785" stroke-opacity=".55" filter="url(#buttonShadow)"/><path d="M130 369v34m-12-12 12 14 12-14" fill="none" stroke="#e3e6ec" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle class="focus-ring" cx="130" cy="389" r="39"/></g>
+        <g class="key" data-control="D-pad Right" role="button" tabindex="0" aria-label="D-pad right" aria-pressed="false"><rect class="hit" x="165" y="276" width="78" height="78" rx="22"/><rect class="face" x="172" y="283" width="64" height="64" rx="20" fill="url(#button)" stroke="#6f7785" stroke-opacity=".55" filter="url(#buttonShadow)"/><path d="M185 315h34m-12-12 14 12-14 12" fill="none" stroke="#e3e6ec" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle class="focus-ring" cx="204" cy="315" r="39"/></g>
+        <!-- Large analog touch zones -->
         <g class="key stick" data-stick="Left stick" role="button" tabindex="0" aria-label="Move left stick" aria-pressed="false">
-          <circle class="hit" cx="370" cy="259" r="67"/><circle cx="370" cy="259" r="49" fill="#111319" stroke="#4b505b" stroke-width="3"/>
-          <circle cx="370" cy="259" r="41" fill="url(#stick)" stroke="#727783" stroke-opacity=".36" stroke-width="2"/>
-          <circle class="stick-cap" cx="370" cy="259" r="28" fill="url(#button)" stroke="#777d88" stroke-opacity=".42" stroke-width="2"/>
-          <path d="M354 250 Q370 240 386 250 M354 268 Q370 278 386 268" fill="none" stroke="#777d88" stroke-opacity=".28" stroke-width="2"/>
-          <circle class="focus-ring" cx="370" cy="259" r="56"/>
+          <circle class="hit" cx="356" cy="332" r="91"/><circle cx="356" cy="332" r="78" fill="#222833" fill-opacity=".74" stroke="#737d8c" stroke-opacity=".62" stroke-width="3"/>
+          <circle cx="356" cy="332" r="63" fill="none" stroke="#8e98a8" stroke-opacity=".28" stroke-width="2" stroke-dasharray="3 8"/>
+          <circle class="stick-cap" cx="356" cy="332" r="47" fill="url(#stick)" stroke="#99a2b1" stroke-opacity=".58" stroke-width="3" filter="url(#buttonShadow)"/>
+          <circle cx="356" cy="332" r="7" fill="#c7b8ff" fill-opacity=".75"/><circle class="focus-ring" cx="356" cy="332" r="85"/>
         </g>
-        <!-- Center menu controls -->
-        <g class="key" data-control="View" role="button" tabindex="0" aria-label="View button" aria-pressed="false"><rect class="hit" x="423" y="220" width="50" height="62" rx="22"/><rect class="face" x="432" y="238" width="34" height="9" rx="5" fill="#14161c" stroke="#7a808a" stroke-opacity=".5"/><text class="tiny-label" x="449" y="267">VIEW</text></g>
-        <g class="key" data-control="Menu" role="button" tabindex="0" aria-label="Menu button" aria-pressed="false"><rect class="hit" x="527" y="220" width="50" height="62" rx="22"/><rect class="face" x="534" y="238" width="34" height="9" rx="5" fill="#14161c" stroke="#7a808a" stroke-opacity=".5"/><text class="tiny-label" x="551" y="267">MENU</text></g>
-        <!-- Face buttons -->
-        <g class="key" data-control="Y" data-face="top" role="button" tabindex="0" aria-label="Y button" aria-pressed="false"><circle class="hit" cx="727" cy="218" r="40"/><circle class="face" cx="727" cy="218" r="22" fill="#d6a83e" stroke="#f1d27d" stroke-opacity=".5"/><circle class="focus-ring" cx="727" cy="218" r="30"/><text class="button-legend" data-legend="Y" x="727" y="218">Y</text></g>
-        <g class="key" data-control="B" data-face="right" role="button" tabindex="0" aria-label="B button" aria-pressed="false"><circle class="hit" cx="762" cy="253" r="40"/><circle class="face" cx="762" cy="253" r="22" fill="#df625b" stroke="#f19b94" stroke-opacity=".5"/><circle class="focus-ring" cx="762" cy="253" r="30"/><text class="button-legend" data-legend="B" x="762" y="253">B</text></g>
-        <g class="key" data-control="A" data-face="bottom" role="button" tabindex="0" aria-label="A button" aria-pressed="false"><circle class="hit" cx="727" cy="288" r="40"/><circle class="face" cx="727" cy="288" r="22" fill="#61b878" stroke="#a0e4ac" stroke-opacity=".48"/><circle class="focus-ring" cx="727" cy="288" r="30"/><text class="button-legend" data-legend="A" x="727" y="288">A</text></g>
-        <g class="key" data-control="X" data-face="left" role="button" tabindex="0" aria-label="X button" aria-pressed="false"><circle class="hit" cx="692" cy="253" r="40"/><circle class="face" cx="692" cy="253" r="22" fill="#568fdb" stroke="#9dc3f5" stroke-opacity=".5"/><circle class="focus-ring" cx="692" cy="253" r="30"/><text class="button-legend" data-legend="X" x="692" y="253">X</text></g>
-        <!-- Right stick and home button -->
         <g class="key stick" data-stick="Right stick" role="button" tabindex="0" aria-label="Move right stick" aria-pressed="false">
-          <circle class="hit" cx="630" cy="329" r="67"/><circle cx="630" cy="329" r="49" fill="#111319" stroke="#4b505b" stroke-width="3"/>
-          <circle cx="630" cy="329" r="41" fill="url(#stick)" stroke="#727783" stroke-opacity=".36" stroke-width="2"/>
-          <circle class="stick-cap" cx="630" cy="329" r="28" fill="url(#button)" stroke="#777d88" stroke-opacity=".42" stroke-width="2"/>
-          <path d="M614 320 Q630 310 646 320 M614 338 Q630 348 646 338" fill="none" stroke="#777d88" stroke-opacity=".28" stroke-width="2"/>
-          <circle class="focus-ring" cx="630" cy="329" r="56"/>
+          <circle class="hit" cx="610" cy="332" r="91"/><circle cx="610" cy="332" r="78" fill="#222833" fill-opacity=".74" stroke="#737d8c" stroke-opacity=".62" stroke-width="3"/>
+          <circle cx="610" cy="332" r="63" fill="none" stroke="#8e98a8" stroke-opacity=".28" stroke-width="2" stroke-dasharray="3 8"/>
+          <circle class="stick-cap" cx="610" cy="332" r="47" fill="url(#stick)" stroke="#99a2b1" stroke-opacity=".58" stroke-width="3" filter="url(#buttonShadow)"/>
+          <circle cx="610" cy="332" r="7" fill="#c7b8ff" fill-opacity=".75"/><circle class="focus-ring" cx="610" cy="332" r="85"/>
         </g>
-        <g class="key" data-control="Guide" role="button" tabindex="0" aria-label="Guide button" aria-pressed="false"><circle class="hit" cx="500" cy="304" r="34"/><circle class="face" cx="500" cy="304" r="14" fill="#30343e" stroke="#818692" stroke-opacity=".55"/><path d="M494 303h12M500 297v12" stroke="#c9c1ff" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>
+        <!-- Face buttons -->
+        <g class="key" data-control="Y" data-face="top" role="button" tabindex="0" aria-label="Y button" aria-pressed="false"><circle class="hit" cx="858" cy="218" r="58"/><circle class="face" cx="858" cy="218" r="46" fill="#d6a83e" stroke="#f1d27d" stroke-opacity=".55" stroke-width="3" filter="url(#buttonShadow)"/><circle class="focus-ring" cx="858" cy="218" r="53"/><text class="button-legend" data-legend="Y" x="858" y="218">Y</text></g>
+        <g class="key" data-control="B" data-face="right" role="button" tabindex="0" aria-label="B button" aria-pressed="false"><circle class="hit" cx="940" cy="300" r="58"/><circle class="face" cx="940" cy="300" r="46" fill="#df625b" stroke="#f19b94" stroke-opacity=".55" stroke-width="3" filter="url(#buttonShadow)"/><circle class="focus-ring" cx="940" cy="300" r="53"/><text class="button-legend" data-legend="B" x="940" y="300">B</text></g>
+        <g class="key" data-control="A" data-face="bottom" role="button" tabindex="0" aria-label="A button" aria-pressed="false"><circle class="hit" cx="858" cy="382" r="58"/><circle class="face" cx="858" cy="382" r="46" fill="#61b878" stroke="#a0e4ac" stroke-opacity=".55" stroke-width="3" filter="url(#buttonShadow)"/><circle class="focus-ring" cx="858" cy="382" r="53"/><text class="button-legend" data-legend="A" x="858" y="382">A</text></g>
+        <g class="key" data-control="X" data-face="left" role="button" tabindex="0" aria-label="X button" aria-pressed="false"><circle class="hit" cx="776" cy="300" r="58"/><circle class="face" cx="776" cy="300" r="46" fill="#568fdb" stroke="#9dc3f5" stroke-opacity=".55" stroke-width="3" filter="url(#buttonShadow)"/><circle class="focus-ring" cx="776" cy="300" r="53"/><text class="button-legend" data-legend="X" x="776" y="300">X</text></g>
       </svg>
     </section>
     <div class="meta-row">
@@ -220,7 +232,7 @@
   const sequence = { value: 0 };
   const axes = { lx: 128, ly: 128, rx: 128, ry: 128 };
   const triggers = { LT: 0, RT: 0 };
-  const centers = { 'Left stick': [370, 259], 'Right stick': [630, 329] };
+  const centers = { 'Left stick': [356, 332], 'Right stick': [610, 332] };
   const status = document.querySelector('#connection-status');
   const statusLabel = document.querySelector('#connection-label');
   const leftReadout = document.querySelector('#input-left');
@@ -284,7 +296,7 @@
     const [cx, cy] = centers[name];
     const p = eventPoint(evt);
     let dx = p.x - cx, dy = p.y - cy;
-    const distance = Math.hypot(dx, dy), radius = 25;
+    const distance = Math.hypot(dx, dy), radius = 40;
     if (distance > radius) { dx = dx / distance * radius; dy = dy / distance * radius; }
     el.querySelector('.stick-cap').setAttribute('cx', cx + dx);
     el.querySelector('.stick-cap').setAttribute('cy', cy + dy);

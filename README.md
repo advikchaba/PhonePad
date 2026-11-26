@@ -25,6 +25,8 @@ The PC receives normal Windows keyboard and mouse events—**not a virtual gamep
 | View / Menu | Tab / Escape |
 | D-pad | Arrow keys |
 
+Use **Customize** in the desktop app to assign each face button, bumper, trigger, menu button, stick click, Guide button, and D-pad direction to a different key, mouse button, or `None`. The selection is saved in `%LOCALAPPDATA%\PhonePad\settings.json` on Windows and restored at the next launch. Left stick movement remains WASD and the right stick remains mouse movement.
+
 This works with games that accept keyboard and mouse. It will not provide controller prompts or true gamepad APIs, and some games—especially games with strict anti-cheat or elevated privileges—may reject injected input. Keep the game window focused. You can run PhonePad as administrator only if the game itself is elevated.
 
 ## Network and privacy

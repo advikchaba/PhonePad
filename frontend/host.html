@@ -42,7 +42,7 @@
         <div class="axis"><span>Right Y</span><div class="track"><div class="fill" id="ry-fill"></div></div><span id="ry-value">0</span></div>
         <div class="trigger"><span>LT</span><div class="track"><div class="fill" id="lt-fill"></div></div><span id="lt-value">0</span></div>
         <div class="trigger"><span>RT</span><div class="track"><div class="fill" id="rt-fill"></div></div><span id="rt-value">0</span></div>
-        <div class="mapping-note"><strong>Default mapping:</strong> left stick = W/A/S/D; right stick = mouse; RT/LT = left/right click; A/B/X/Y = Space/Ctrl/E/Q; LB/RB = Shift/R; View/Menu = Tab/Esc; D-pad = arrow keys.</div>
+        <div class="mapping-note" id="mapping-note">Left stick = W/A/S/D; right stick = mouse; button mappings are editable in the desktop app.</div>
       </section>
     </aside>
   </div>
@@ -65,6 +65,11 @@
       const response = await fetch('/api/status', { cache: 'no-store' });
       const s = await response.json();
       document.getElementById('phone-url').textContent = s.phone_url;
+      if (s.button_mapping) {
+        const names = { A: 'A', B: 'B', X: 'X', Y: 'Y', LB: 'LB', RB: 'RB', LT: 'LT', RT: 'RT', BACK: 'View', START: 'Menu', LS: 'L-stick click', RS: 'R-stick click', GUIDE: 'Guide', UP: 'D-pad ↑', DOWN: 'D-pad ↓', LEFT: 'D-pad ←', RIGHT: 'D-pad →' };
+        const mapping = Object.entries(names).map(([key, name]) => `${name} → ${s.button_mapping[key] || 'None'}`).join(' · ');
+        document.getElementById('mapping-note').textContent = `Left stick = W/A/S/D · Right stick = mouse · ${mapping}`;
+      }
       const pill = document.getElementById('phone-status');
       pill.className = `pill ${s.connected ? 'online' : ''}`;
       pill.querySelector('span:last-child').textContent = s.connected ? 'Phone connected' : 'Waiting for phone';

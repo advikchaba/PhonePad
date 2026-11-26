@@ -113,6 +113,7 @@ async def status() -> dict[str, Any]:
         "connected": connected,
         "input_ready": input_output.ready,
         "input_error": input_output.error,
+        "button_mapping": input_output.button_mapping,
         "phone_url": phone_url(),
         "state": public_state(),
     }

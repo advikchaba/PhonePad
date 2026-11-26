@@ -1,12 +1,23 @@
 """Native Windows desktop host for the PhonePad LAN controller."""
 from __future__ import annotations
 
+import json
 import os
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 PORT = int(os.environ.get("PHONEPAD_PORT", "8765"))
+
+
+def settings_path() -> Path:
+    """Per-user persistent remapping preferences."""
+    if os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return base / "PhonePad" / "settings.json"
 
 
 def main() -> None:
@@ -25,6 +36,12 @@ def main() -> None:
         messagebox.showerror("PhonePad could not start", str(exc))
         root.destroy()
         return
+
+    try:
+        saved = json.loads(settings_path().read_text(encoding="utf-8"))
+        backend_main.input_output.set_button_mapping(saved.get("button_mapping", {}))
+    except (OSError, ValueError, TypeError):
+        pass
 
     bg = "#101319"
     panel = "#191d25"
@@ -157,12 +174,114 @@ def main() -> None:
     triggers_label = status_card.winfo_children()[-1]
     triggers_label.pack(fill="x", pady=(8, 0))
 
+    mapping_summary = tk.StringVar()
+
+    def refresh_mapping_summary() -> None:
+        current = backend_main.input_output.button_mapping
+        labels = {
+            "A": "A", "B": "B", "X": "X", "Y": "Y", "LB": "LB", "RB": "RB",
+            "LT": "LT", "RT": "RT", "BACK": "View", "START": "Menu",
+            "LS": "L-stick click", "RS": "R-stick click", "GUIDE": "Guide",
+            "UP": "D-pad ↑", "DOWN": "D-pad ↓", "LEFT": "D-pad ←", "RIGHT": "D-pad →",
+        }
+        mapping_summary.set("   ·   ".join(f"{label} → {current[key]}" for key, label in labels.items()))
+
+    def open_mapping_editor() -> None:
+        from tkinter import ttk
+
+        dialog = tk.Toplevel(root)
+        dialog.title("Customize controls")
+        dialog.geometry("720x560")
+        dialog.resizable(False, False)
+        dialog.configure(bg=panel)
+        dialog.transient(root)
+        dialog.grab_set()
+        style = ttk.Style(dialog)
+        style.theme_use("clam")
+        style.configure("PhonePad.TCombobox", fieldbackground="#252a33", background="#302842",
+                        foreground=text, arrowcolor=text, bordercolor=line, lightcolor=line, darkcolor=line)
+
+        label(dialog, "CUSTOMIZE YOUR CONTROLS", size=10, color=accent, bold=True, bg=panel).pack(anchor="w", padx=20, pady=(18, 4))
+        label(dialog, "Choose the PC key or mouse button for each phone control. Changes are saved on this PC.",
+              size=9, color=muted, bg=panel).pack(anchor="w", padx=20, pady=(0, 12))
+
+        controls = [
+            ("A · bottom face", "A"), ("B · right face", "B"),
+            ("X · left face", "X"), ("Y · top face", "Y"),
+            ("LB · left bumper", "LB"), ("RB · right bumper", "RB"),
+            ("LT · left trigger", "LT"), ("RT · right trigger", "RT"),
+            ("View / Back", "BACK"), ("Menu / Start", "START"),
+            ("Left stick click", "LS"), ("Right stick click", "RS"),
+            ("Guide / home", "GUIDE"),
+            ("D-pad up", "UP"), ("D-pad down", "DOWN"),
+            ("D-pad left", "LEFT"), ("D-pad right", "RIGHT"),
+        ]
+        grid = tk.Frame(dialog, bg=panel)
+        grid.pack(fill="both", expand=True, padx=20)
+        grid.grid_columnconfigure(0, weight=1, uniform="map")
+        grid.grid_columnconfigure(1, weight=1, uniform="map")
+        variables: dict[str, tk.StringVar] = {}
+        current = backend_main.input_output.button_mapping
+        for index, (caption, control) in enumerate(controls):
+            column, row_index = divmod(index, 9)
+            cell = tk.Frame(grid, bg=panel)
+            cell.grid(row=row_index, column=column, sticky="ew", padx=(0, 12), pady=5)
+            label(cell, caption, size=9, color=text, bg=panel).pack(anchor="w", pady=(0, 3))
+            var = tk.StringVar(value=current.get(control, "None"))
+            variables[control] = var
+            ttk.Combobox(cell, textvariable=var, values=backend_pad.BINDING_CHOICES,
+                         state="readonly", width=18, style="PhonePad.TCombobox").pack(fill="x")
+
+        label(dialog, "Left stick stays WASD; right stick stays mouse movement.",
+              size=8, color=muted, bg=panel).pack(anchor="w", padx=20, pady=(7, 0))
+        buttons = tk.Frame(dialog, bg=panel)
+        buttons.pack(fill="x", padx=20, pady=18)
+
+        def reset_defaults() -> None:
+            for name, value in backend_pad.DEFAULT_BUTTON_BINDINGS.items():
+                variables[name].set(value)
+
+        def save_mapping() -> None:
+            updated = {name: var.get() for name, var in variables.items()}
+            previous = backend_main.input_output.button_mapping.copy()
+            try:
+                backend_main.input_output.set_button_mapping(updated)
+                path = settings_path()
+                path.parent.mkdir(parents=True, exist_ok=True)
+                temp = path.with_suffix(".tmp")
+                temp.write_text(json.dumps({"button_mapping": updated}, indent=2), encoding="utf-8")
+                temp.replace(path)
+            except Exception as exc:
+                backend_main.input_output.set_button_mapping(previous)
+                messagebox.showerror("Could not save mapping", str(exc), parent=dialog)
+                return
+            refresh_mapping_summary()
+            dialog.destroy()
+
+        tk.Button(buttons, text="Restore defaults", command=reset_defaults,
+                  bg=panel_alt, fg=text, activebackground="#343a46", activeforeground=text,
+                  relief="flat", padx=12, pady=8, font=("Segoe UI", 9), cursor="hand2", borderwidth=0).pack(side="left")
+        tk.Button(buttons, text="Cancel", command=dialog.destroy,
+                  bg=panel_alt, fg=text, activebackground="#343a46", activeforeground=text,
+                  relief="flat", padx=15, pady=8, font=("Segoe UI", 9), cursor="hand2", borderwidth=0).pack(side="right", padx=(8, 0))
+        tk.Button(buttons, text="Save mapping", command=save_mapping,
+                  bg="#7359d4", fg="white", activebackground="#876be8", activeforeground="white",
+                  relief="flat", padx=15, pady=8, font=("Segoe UI", 9, "bold"), cursor="hand2", borderwidth=0).pack(side="right")
+
+    from backend import pad as backend_pad
     map_card = tk.Frame(content, bg="#1b1d25", highlightbackground=line, highlightthickness=1, padx=14, pady=11)
     map_card.pack(fill="x", pady=(14, 0))
-    label(map_card, "DEFAULT GAME MAPPING", size=8, color=accent, bold=True).pack(anchor="w")
-    label(map_card, "Left stick: WASD   ·   Right stick: mouse   ·   A: Space   ·   B: Ctrl   ·   X: E   ·   Y: Q\n"
-          "LB: Shift   ·   RB: R   ·   LT / RT: right / left mouse click   ·   D-pad: arrows",
-          size=9, color=muted, wraplength=900, justify="left").pack(anchor="w", pady=(5, 0))
+    map_head = tk.Frame(map_card, bg="#1b1d25")
+    map_head.pack(fill="x")
+    label(map_head, "BUTTON MAPPING", size=8, color=accent, bold=True, bg="#1b1d25").pack(side="left")
+    tk.Button(map_head, text="Customize", command=open_mapping_editor,
+              bg="#302842", fg="#e0d6ff", activebackground="#42365a", activeforeground="white",
+              relief="flat", padx=10, pady=5, font=("Segoe UI", 8, "bold"), cursor="hand2", borderwidth=0).pack(side="right")
+    label(map_card, "", size=9, color=muted, bg="#1b1d25", wraplength=900, justify="left").configure(textvariable=mapping_summary)
+    mapping_label = map_card.winfo_children()[-1]
+    mapping_label.pack(anchor="w", pady=(6, 3))
+    refresh_mapping_summary()
+    label(map_card, "Left stick: WASD   ·   Right stick: mouse movement (fixed)", size=8, color=muted, bg="#1b1d25").pack(anchor="w")
     label(content, "Keyboard/mouse emulation works in games that accept those inputs; it is not a virtual gamepad.",
           size=8, color="#7f8794", wraplength=900).pack(anchor="w", pady=(10, 0))
 

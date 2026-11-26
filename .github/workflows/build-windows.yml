@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to build and publish (for example, 1.01)"
+        description: "Release tag to build and publish (for example, 1.02)"
         required: false
         default: desktop-preview
         type: string
@@ -31,8 +31,6 @@ jobs:
 
       - name: Install build dependencies
         run: python -m pip install --upgrade -r requirements.txt
-        env:
-          VGAMEPAD_SKIP_VIGEMBUS_INSTALL: "true"
 
       - name: Build windowed executable
         run: python -m PyInstaller --noconfirm --clean PhonePad.spec
@@ -56,6 +54,4 @@ jobs:
           fail_on_unmatched_files: true
           files: dist/PhonePad.exe
           body: |
-            Windows desktop app. Connect a phone on the same Wi-Fi network, scan the QR code, and use its inputs as a virtual Xbox controller.
-
-            ViGEmBus is required; PhonePad offers the bundled driver installer on first launch.
+            Windows desktop app. Connect a phone on the same Wi-Fi network, scan the QR code, and use its inputs as keyboard/mouse controls. No virtual gamepad driver or phone app is required.

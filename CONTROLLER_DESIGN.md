@@ -14,9 +14,9 @@ Make every control reachable without a fingertip balancing on the phone edge, wh
 - **Respect orientation and accessibility.** Prefer landscape; maintain readable labels, high contrast, keyboard-operable buttons, and `aria-pressed` state. Never rely on color alone to show a press.
 
 ## Implementation in this branch
-`frontend/index.html` is the phone controller, served by the FastAPI app at `/phone`. Touch and keyboard controls produce compact binary packets over a WebSocket; `backend/main.py` applies them to the virtual pad and exposes live state to the desktop dashboard. Bumpers are inset from the glass edge, buttons have generous hit regions, and multi-touch can combine sticks and buttons. `frontend/host.html` displays a QR code, connection/driver status, and live button, stick, and trigger values.
+`frontend/index.html` is the phone controller, served by the FastAPI app at `/phone`. Touch and keyboard controls produce compact binary packets over a WebSocket; `backend/main.py` applies them to Windows keyboard/mouse input and exposes live state to the desktop dashboard. Bumpers are inset from the glass edge, buttons have generous hit regions, and multi-touch can combine sticks and buttons. `frontend/host.html` displays a QR code, connection/input status, live controls, and the default keyboard mapping.
 
-The Windows app creates a virtual Xbox 360 controller through ViGEmBus. On first launch it offers to install the bundled driver with administrator approval. A compatible Windows PC and the ViGEmBus driver are required for games to receive controller input. Actual comfort still needs device testing; the validation checklist below is a release gate, not a claim that every hand/device combination has already been measured.
+The Windows app uses the built-in `SendInput` API: no virtual gamepad driver is needed. Games receive keyboard and mouse events, not a gamepad device, so controller-only games and strict anti-cheat titles may not work. Actual comfort still needs device testing; the validation checklist below is a release gate, not a claim that every hand/device combination has already been measured.
 
 ## Validation before shipping
 

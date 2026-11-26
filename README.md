@@ -1,25 +1,37 @@
 # PhonePad
 
-Turn an Android or iPhone browser into a touch controller for Windows games. PhonePad runs a small LAN server on the PC, sends phone controls over WebSocket, and presents them to Windows as a virtual Xbox 360 controller.
+Use your phone as a wireless **keyboard-and-mouse controller** for PC games. PhonePad runs a local Wi-Fi server in a standalone Windows desktop app. Your phone opens the controller in its built-in browser—no phone app, gamepad driver, account, or cloud service is required.
 
-## Install and play
+## Download and play
 
-1. Download the latest Windows build: [PhonePad.exe](https://github.com/advikchaba/PhonePad/releases/download/1.01/PhonePad.exe).
-2. Install the bundled **ViGEmBus** driver when PhonePad offers. Approve the Windows administrator prompt. This one-time driver lets games see the virtual controller.
-3. Start PhonePad on the PC. If Windows Firewall asks, allow it on **private networks**.
-4. Connect the phone and PC to the **same trusted Wi-Fi network**.
-5. Scan the QR code shown in the PhonePad desktop window, or open the displayed address on your phone.
-6. Hold the phone in landscape and play. The PC window mirrors the phone's buttons, sticks, and triggers.
+1. Download [PhonePad 1.02 for Windows](https://github.com/advikchaba/PhonePad/releases/download/1.02/PhonePad.exe).
+2. Open `PhonePad.exe` on the PC. It starts as a desktop window without a command prompt.
+3. If Windows Firewall asks, allow PhonePad on **private networks**.
+4. Connect the phone and PC to the same trusted Wi-Fi network.
+5. Scan the QR code in the desktop window with the phone camera, or open the displayed address in the phone's built-in browser.
+6. Keep the PC window open, focus the game, and play. The desktop dashboard mirrors live phone input.
 
-If the driver prompt was skipped, install ViGEmBus from [its official releases](https://github.com/nefarius/ViGEmBus/releases), then restart PhonePad. The desktop window reports whether the phone and virtual pad are ready.
+## Keyboard and mouse mapping
 
-## Controls and connection
+The PC receives normal Windows keyboard and mouse events—**not a virtual gamepad**. Defaults are:
 
-The phone page presents a familiar Xbox-style controller, with a PlayStation legend option. Touch and hold buttons; drag on the sticks for analog movement; multi-touch supports simultaneous controls. Bumpers are inset from the screen edges with forgiving hit areas. Disconnecting the phone releases all virtual controls so inputs cannot remain stuck.
+| Phone control | PC input |
+| --- | --- |
+| Left stick | W / A / S / D |
+| Right stick | Relative mouse movement |
+| A / B / X / Y | Space / Left Ctrl / E / Q |
+| LB / RB | Left Shift / R |
+| LT / RT | Right-click / Left-click |
+| View / Menu | Tab / Escape |
+| D-pad | Arrow keys |
 
-PhonePad uses HTTP and a binary WebSocket on the local network. Keep both devices on a private, trusted Wi-Fi network; the controller server has no authentication and is not intended to be exposed to the internet. Only one phone controls the virtual pad at a time.
+This works with games that accept keyboard and mouse. It will not provide controller prompts or true gamepad APIs, and some games—especially games with strict anti-cheat or elevated privileges—may reject injected input. Keep the game window focused. You can run PhonePad as administrator only if the game itself is elevated.
 
-## Run from source
+## Network and privacy
+
+The phone and PC must be on the same local network. PhonePad sends input directly over HTTP/WebSocket on that network; it has no authentication, so use a trusted private Wi-Fi network and do not expose it to the internet.
+
+## Run from source / build
 
 On Windows with Python 3.10 or newer:
 
@@ -29,7 +41,7 @@ py -3 -m venv .venv
 .venv\Scripts\pythonw.exe app.py
 ```
 
-To build a fresh windowed executable, run `build_exe.bat`. It creates `dist\PhonePad.exe`; launch that executable directly—there is no startup batch file or command window. The build workflow also publishes the Windows download on the [releases page](https://github.com/advikchaba/PhonePad/releases).
+Run `build_exe.bat` to create a self-contained `dist\PhonePad.exe`. The Windows release workflow publishes builds on the [releases page](https://github.com/advikchaba/PhonePad/releases).
 
 ## Project files
 
@@ -37,7 +49,7 @@ To build a fresh windowed executable, run `build_exe.bat`. It creates `dist\Phon
 | --- | --- |
 | `desktop_app.py` | Windowed desktop host and LAN server lifecycle |
 | `backend/main.py` | HTTP endpoints, phone WebSocket, QR, and live state |
-| `backend/pad.py` | ViGEmBus / XInput virtual gamepad output |
+| `backend/pad.py` | Driver-free Windows keyboard/mouse event mapping |
 | `frontend/host.html` | Desktop connection dashboard and live input mirror |
 | `frontend/index.html` | Phone controller interface |
 | `PhonePad.spec` | Windowed PyInstaller build |

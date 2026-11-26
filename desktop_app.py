@@ -2,78 +2,14 @@
 from __future__ import annotations
 
 import os
-import platform
-import subprocess
 import sys
 import threading
 import time
 import webbrowser
-from pathlib import Path
 
 
 PORT = int(os.environ.get("PHONEPAD_PORT", "8765"))
 
-
-def maybe_install_driver(gamepad_module: object) -> None:
-    """Offer the bundled ViGEmBus installer when no virtual pad is available."""
-    if os.name != "nt" or gamepad_module.pad.ready:
-        return
-    from tkinter import Tk, messagebox
-
-    root = Tk()
-    root.withdraw()
-    try:
-        from importlib.util import find_spec
-
-        spec = find_spec("vgamepad")
-        package_dir = Path(spec.origin).resolve().parent if spec and spec.origin else None
-        architecture = "x64" if platform.architecture()[0] == "64bit" else "x86"
-        msi = package_dir / "win" / "vigem" / "install" / architecture / f"ViGEmBusSetup_{architecture}.msi" if package_dir else None
-    except Exception:
-        msi = None
-    if msi is None or not msi.is_file():
-        messagebox.showinfo(
-            "Gamepad driver needed",
-            "PhonePad needs the ViGEmBus driver before games can see the virtual controller. "
-            "Install it from https://github.com/nefarius/ViGEmBus/releases, then restart PhonePad.",
-            parent=root,
-        )
-        root.destroy()
-        return
-    if not messagebox.askyesno(
-        "Install virtual gamepad driver?",
-        "PhonePad needs the ViGEmBus driver so Windows games can see your phone as an Xbox controller.\n\n"
-        "Install it now? Windows will ask for administrator approval. This is a one-time install.",
-        parent=root,
-    ):
-        root.destroy()
-        return
-    escaped_msi = str(msi).replace("'", "''")
-    script = (
-        "$msi = '" + escaped_msi + "'; "
-        "$args = '/i \"' + $msi + '\" /passive /norestart'; "
-        "$p = Start-Process -FilePath 'msiexec.exe' -ArgumentList $args -Verb RunAs -Wait -PassThru; exit $p.ExitCode"
-    )
-    try:
-        proc = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-            timeout=300,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-        if proc.returncode in (0, 3010):
-            from backend.pad import VirtualGamepad
-
-            gamepad_module.pad = VirtualGamepad()
-            if gamepad_module.pad.ready:
-                messagebox.showinfo("PhonePad ready", "ViGEmBus is installed. Connect your phone and start playing.", parent=root)
-            elif proc.returncode == 3010:
-                messagebox.showinfo("Restart required", "Windows requested a restart to finish installing ViGEmBus.", parent=root)
-        else:
-            messagebox.showwarning("Driver installation incomplete", "Install ViGEmBus manually, then restart PhonePad.", parent=root)
-    except Exception as exc:
-        messagebox.showerror("Driver installation failed", str(exc), parent=root)
-    finally:
-        root.destroy()
 
 
 def show_browser_fallback(url: str, detail: str) -> None:
@@ -109,7 +45,6 @@ def main() -> None:
         import uvicorn
         import backend.main as backend_main
 
-        maybe_install_driver(backend_main)
         app = backend_main.app
         config = uvicorn.Config(
             app,

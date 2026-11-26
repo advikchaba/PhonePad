@@ -209,7 +209,7 @@
       <div class="hints"><div class="hint"><span class="hint-mark">●</span> Hold to press</div><div class="hint"><span class="hint-mark">↔</span> Drag sticks</div><div class="hint"><span class="hint-mark">⌁</span> Multi-touch</div></div>
       <div class="inputs" aria-live="polite"><span>INPUT</span><span class="input-pill" id="input-left">LX 0 · LY 0</span><span class="input-pill" id="input-right">RX 0 · RY 0</span></div>
     </div>
-    <div class="footnote">Inputs go over your local Wi-Fi only. Keep the PhonePad host window open while playing.</div>
+    <div class="footnote">The console toggle changes button labels only; the PC receives keyboard and mouse inputs. Keep the PhonePad host window open while playing.</div>
   </main>
 </div>
 <script>
@@ -310,9 +310,9 @@
     socket.onmessage = evt => {
       try {
         const message = JSON.parse(evt.data);
-        if (message.type === 'ready' && !message.pad_ready) {
-          setStatus('Connected · PC needs ViGEmBus', true, true);
-          document.querySelector('.footnote').textContent = message.pad_error || 'Install ViGEmBus on the PC, then restart PhonePad.';
+        if (message.type === 'ready' && !message.input_ready) {
+          setStatus('Connected · Windows input unavailable', true, true);
+          document.querySelector('.footnote').textContent = message.input_error || 'PhonePad could not initialize Windows keyboard/mouse input.';
         }
       } catch { /* no status payload */ }
     };

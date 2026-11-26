@@ -12,14 +12,14 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, Response
 
-from .pad import BUTTON_BITS, VirtualGamepad
+from .pad import BUTTON_BITS, KeyboardMouseOutput
 
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = Path(getattr(sys, "_MEIPASS", ROOT)) / "frontend"
 PORT = int(os.environ.get("PHONEPAD_PORT", "8765"))
 
 app = FastAPI(title="PhonePad", docs_url=None, redoc_url=None)
-pad = VirtualGamepad()
+input_output = KeyboardMouseOutput()
 active_phone: WebSocket | None = None
 connected = False
 current_state: dict[str, Any] = {
@@ -94,7 +94,7 @@ async def release_controller_on_shutdown() -> None:
     current_state = {
         "buttons": [], "axes": {"lx": 128, "ly": 128, "rx": 128, "ry": 128}, "lt": 0, "rt": 0,
     }
-    pad.release_all()
+    input_output.release_all()
 
 
 @app.get("/")
@@ -111,8 +111,8 @@ async def phone_page() -> FileResponse:
 async def status() -> dict[str, Any]:
     return {
         "connected": connected,
-        "pad_ready": pad.ready,
-        "pad_error": pad.error,
+        "input_ready": input_output.ready,
+        "input_error": input_output.error,
         "phone_url": phone_url(),
         "state": public_state(),
     }
@@ -144,11 +144,11 @@ async def controller_socket(ws: WebSocket) -> None:
             pass
     active_phone = ws
     connected = True
-    pad.release_all()
+    input_output.release_all()
     current_state = {
         "buttons": [], "axes": {"lx": 128, "ly": 128, "rx": 128, "ry": 128}, "lt": 0, "rt": 0,
     }
-    await ws.send_json({"type": "ready", "pad_ready": pad.ready, "pad_error": pad.error})
+    await ws.send_json({"type": "ready", "input_ready": input_output.ready, "input_error": input_output.error})
     try:
         while True:
             packet = await asyncio.wait_for(ws.receive_bytes(), timeout=5.0)
@@ -157,7 +157,7 @@ async def controller_socket(ws: WebSocket) -> None:
                 await ws.close(code=1003, reason="Invalid controller packet")
                 break
             current_state = state
-            pad.apply(state)
+            input_output.apply(state)
     except WebSocketDisconnect:
         pass
     except asyncio.TimeoutError:
@@ -171,7 +171,7 @@ async def controller_socket(ws: WebSocket) -> None:
         if active_phone is ws:
             active_phone = None
             connected = False
-            pad.release_all()
+            input_output.release_all()
             current_state = {
                 "buttons": [], "axes": {"lx": 128, "ly": 128, "rx": 128, "ry": 128}, "lt": 0, "rt": 0,
             }

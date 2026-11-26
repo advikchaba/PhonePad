@@ -8,7 +8,7 @@ root = Path(SPECPATH)
 package_data = []
 package_binaries = []
 hidden_imports = []
-for package in ("webview", "fastapi", "uvicorn", "websockets", "qrcode", "vgamepad"):
+for package in ("webview", "fastapi", "uvicorn", "websockets", "qrcode"):
     data, binaries, hidden = collect_all(package)
     package_data += data
     package_binaries += binaries

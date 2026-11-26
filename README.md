@@ -1,10 +1,10 @@
 # PhonePad
 
-Use your phone as a wireless **keyboard-and-mouse controller** for PC games. PhonePad runs a local Wi-Fi server in a standalone Windows desktop app. Your phone opens the controller in its built-in browser—no phone app, gamepad driver, account, or cloud service is required.
+Use your phone as a wireless **keyboard-and-mouse controller** for PC games. PhonePad runs a local Wi-Fi server in a native Windows desktop app. Its PC dashboard does not require an external browser runtime; your phone opens the controller in its built-in browser. No phone app, gamepad driver, account, or cloud service is required.
 
 ## Download and play
 
-1. Download [PhonePad 1.02 for Windows](https://github.com/advikchaba/PhonePad/releases/download/1.02/PhonePad.exe).
+1. Download [PhonePad 1.03 for Windows](https://github.com/advikchaba/PhonePad/releases/download/1.03/PhonePad.exe).
 2. Open `PhonePad.exe` on the PC. It starts as a desktop window without a command prompt.
 3. If Windows Firewall asks, allow PhonePad on **private networks**.
 4. Connect the phone and PC to the same trusted Wi-Fi network.
@@ -47,7 +47,7 @@ Run `build_exe.bat` to create a self-contained `dist\PhonePad.exe`. The Windows 
 
 | File | Purpose |
 | --- | --- |
-| `desktop_app.py` | Windowed desktop host and LAN server lifecycle |
+| `desktop_app.py` | Native Tk desktop dashboard and LAN server lifecycle |
 | `backend/main.py` | HTTP endpoints, phone WebSocket, QR, and live state |
 | `backend/pad.py` | Driver-free Windows keyboard/mouse event mapping |
 | `frontend/host.html` | Desktop connection dashboard and live input mirror |

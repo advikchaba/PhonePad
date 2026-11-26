@@ -8,7 +8,7 @@ root = Path(SPECPATH)
 package_data = []
 package_binaries = []
 hidden_imports = []
-for package in ("webview", "fastapi", "uvicorn", "websockets", "qrcode"):
+for package in ("fastapi", "uvicorn", "websockets", "qrcode", "PIL"):
     data, binaries, hidden = collect_all(package)
     package_data += data
     package_binaries += binaries
@@ -21,9 +21,7 @@ a = Analysis(
     binaries=package_binaries,
     datas=package_data + [(str(frontend), "frontend")],
     hiddenimports=hidden_imports,
-    hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
     excludes=["unittest"],
     noarchive=False,
 )

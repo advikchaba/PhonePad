@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag to build and publish (for example, 1.02)"
+        description: "Release tag to build and publish (for example, 1.03)"
         required: false
         default: desktop-preview
         type: string
